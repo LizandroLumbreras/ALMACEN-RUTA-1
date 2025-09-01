@@ -213,22 +213,35 @@
     }
   }
 
-  async function cargarCatalogo(){
-    catalogo = []; codeIndex.clear();
+async function cargarCatalogo(){
+  try{
+    catalogo = []; 
+    codeIndex.clear();
+
     const snap = await getDocs(collection(db, "productos"));
     snap.forEach(d=>{
       const x = d.data();
-      if(x.activo===false) return;
+      if (!x.activo) return;   // 👈 solo deja pasar los que tienen activo:true
+
       const p = {
         id: d.id,
         nombre: x.concepto || "SIN NOMBRE",
-        codigo: (x.codigoBarra||"").toString(),
-        precioPublico: Number(x.precioPublico||0),
+        codigo: (x.codigoBarra || "").toString(),
+        precioPublico: Number(x.precioPublico || 0),
       };
       catalogo.push(p);
-      if(p.codigo) codeIndex.set(p.codigo.trim(), p.id);
+      if (p.codigo) codeIndex.set(p.codigo.trim(), p.id);
     });
+
+    console.log("Catálogo cargado:", catalogo.length, "productos activos");
+    if (catalogo.length === 0) {
+      alert("No hay productos activos. Marca algunos como activo:true en Firebase.");
+    }
+  }catch(err){
+    console.error("Error cargando catálogo:", err);
+    alert("No se pudo leer la colección 'productos'. Revisa la consola.");
   }
+}
 
   async function cargarStock(){
     stockCache.clear();
