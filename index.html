@@ -367,36 +367,57 @@ async function cargarCatalogo(){
     return `E-${String(folio).padStart(6,"0")}`;
   }
 
-  async function guardarEntrada(){
-    if(captura.length===0){ alert("Agrega al menos un producto."); return; }
-    const tipo  = elTipo.value;
-    const fecha = elFecha.value ? new Date(elFecha.value+"T12:00:00") : new Date(); // medio día para evitar TZ
-    const fecha_dia = toYYYYMMDD(fecha);
-    const notas = (elNotas.value||"").trim();
+async function guardarEntrada(){
+  if (captura.length === 0) { alert("Agrega al menos un producto."); return; }
 
-    const folio = await getNextFolioEntrada();
+  const tipo      = elTipo.value;
+  const fecha     = elFecha.value ? new Date(elFecha.value + "T12:00:00") : new Date(); // TZ-safe
+  const fecha_dia = toYYYYMMDD(fecha);
+  const notas     = (elNotas.value || "").trim();
 
-    // 1) Guardar documento de entrada (cabecera)
-    const entDoc = await addDoc(colEntr, {
-      folio, tipo, fecha: Timestamp.fromDate(fecha), fecha_txt: fecha.toLocaleString(), fecha_dia,
-      notas, rutaId, almacenId,
-      lineas: captura.map(x=>({productoId:x.id, nombre:x.nombre, codigo:x.codigo, cantidad:x.cantidad})),
-      creado: serverTimestamp()
-    });
+  const folio = await getNextFolioEntrada();
 
-    // 2) Actualizar existencias por transacción por cada línea (suma)
-    for(const it of captura){
-      const stockRef = doc(colStock, it.id); // doc id = productoId
-      await runTransaction(db, async (tx)=>{
-        const snap = await tx.get(stockRef);
-        const prev = snap.exists() ? Number(snap.data().stock||0) : 0;
-        const next = prev + Number(it.cantidad||0);
-tx.set(stockRef, {
-  productoId: it.id,
-  stock: +next.toFixed(2),
-  updatedAt: serverTimestamp()
-}, {merge:true});
+  // Copia antes de limpiar para usar en el alert
+  const lineasCopia = captura.map(x => ({ ...x }));
 
+  // 1) Guardar cabecera de la entrada
+  await addDoc(colEntr, {
+    folio, tipo,
+    fecha: Timestamp.fromDate(fecha),
+    fecha_txt: fecha.toLocaleString(),
+    fecha_dia,
+    notas, rutaId, almacenId,
+    lineas: lineasCopia.map(x => ({
+      productoId: x.id, nombre: x.nombre, codigo: x.codigo, cantidad: x.cantidad
+    })),
+    creado: serverTimestamp()
+  });
+
+  // 2) Actualizar existencias (sumar) – una transacción por producto
+  for (const it of lineasCopia) {
+    const stockRef = doc(colStock, it.id); // docId = productoId
+    await runTransaction(db, async (tx) => {
+      const snap = await tx.get(stockRef);
+      const prev = snap.exists() ? Number(snap.data().stock || 0) : 0;
+      const next = prev + Number(it.cantidad || 0);
+      tx.set(
+        stockRef,
+        {
+          productoId: it.id,
+          stock: +next.toFixed(2),
+          updatedAt: serverTimestamp()
+        },
+        { merge: true }
+      );
+    }); // <--- CIERRA runTransaction ✅
+  }       // <--- CIERRA el for ✅
+
+  // 3) Refrescar stock y limpiar UI
+  await cargarStock();
+  captura = [];
+  render();
+  alert(`Entrada guardada: ${folio} (${lineasCopia.length} líneas)`);
+}
 
     // 3) Refrescar stock cache y limpiar
     await cargarStock();
