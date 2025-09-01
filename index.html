@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Entradas – Ruta 1 (ALMACEN_RUTA1)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --azul:#00416A; --resalte:#0c6cbd; --ok:#1e8e3e; --bg-grad:linear-gradient(to right,#00416A,#E4E5E6);
+      --card: rgba(255,255,255,.95); --muted:rgba(0,0,0,.55); --shadow:0 6px 18px rgba(0,0,0,.18);
+      --radius:14px; --radius-sm:10px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:'Poppins',system-ui,Arial; color:#111; background:var(--bg-grad);
+      display:flex; flex-direction:column;
+    }
+    header{
+      position:sticky; top:0; z-index:50; height:56px;
+      display:flex; align-items:center; gap:10px; justify-content:center;
+      color:#fff; background:rgba(0,0,0,.55); font-weight:700;
+      backdrop-filter:saturate(120%) blur(4px);
+    }
+    header img{height:40px; object-fit:contain}
+    .wrap{flex:1; padding:12px; display:flex; flex-direction:column; gap:12px; max-width:900px; margin:0 auto}
+
+    .card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
+    .section{padding:12px}
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .row>label{min-width:120px; font-size:13px; color:#333}
+    input, select, textarea{
+      padding:10px 12px; border-radius:10px; border:1px solid #e1e5ea; font-size:15px; outline:none; flex:1;
+      background:#fff;
+    }
+    .searchbox{position:relative}
+    .results{
+      position:absolute; left:0; right:0; top:calc(100% + 6px); background:#fff; border-radius:12px; box-shadow:var(--shadow);
+      max-height:260px; overflow:auto; display:none; z-index:10;
+    }
+    .item{padding:10px 12px; display:flex; justify-content:space-between; cursor:pointer}
+    .item small{color:var(--muted)}
+    .item:hover{background:#f4f6f9}
+
+    .table-wrap{max-height:360px; overflow:auto}
+    table{width:100%; border-collapse:collapse}
+    thead th{background:var(--azul); color:#fff; padding:10px; position:sticky; top:0}
+    td, th{padding:8px; border-bottom:1px solid #eef1f5}
+    tfoot td{padding:10px; font-weight:700}
+    .qty{width:120px}
+    .btn{
+      border:none; border-radius:12px; padding:12px 16px; font-weight:700; color:#fff; cursor:pointer;
+      background:linear-gradient(180deg,var(--resalte),#094d85); box-shadow:var(--shadow)
+    }
+    .btn.ok{background:linear-gradient(180deg,#1e8e3e,#146329)}
+    .btn.warn{background:linear-gradient(180deg,#f39c12,#b9770e)}
+    .muted{color:var(--muted)}
+    .pill{display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2f7; font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <img src="logo_proveedora.webp" alt="Logo"/>
+    <span>Entradas – Ruta 1 / <span class="pill">ALMACEN_RUTA1</span></span>
+  </header>
+
+  <main class="wrap">
+    <!-- CONTROLES CABECERA -->
+    <section class="card section">
+      <div class="row">
+        <label>Tipo de entrada</label>
+        <select id="tipoEntrada">
+          <option value="inventario">Inventario inicial</option>
+          <option value="reposicion">Reposición</option>
+          <option value="ajuste">Ajuste</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Fecha</label>
+        <input id="fechaEntrada" type="date"/>
+        <label>Notas</label>
+        <input id="notas" type="text" placeholder="Observaciones (opcional)"/>
+      </div>
+    </section>
+
+    <!-- BUSCADOR / CAPTURA -->
+    <section class="card section">
+      <div class="row">
+        <label>Buscar producto</label>
+        <div class="searchbox" style="flex:1">
+          <input id="buscador" type="text" placeholder="Escribe nombre o escanea código..."/>
+          <div id="resultados" class="results"></div>
+        </div>
+        <label>Cantidad</label>
+        <input id="cantidad" class="qty" type="number" min="0.01" step="0.01" value="1"/>
+        <button id="btnAgregar" class="btn">Agregar</button>
+      </div>
+      <div class="muted" style="margin-top:6px">Tip: enter en “Cantidad” para agregar más rápido.</div>
+    </section>
+
+    <!-- TABLA CAPTURA -->
+    <section class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Producto</th>
+              <th>Código</th>
+              <th style="text-align:right">Cant.</th>
+              <th style="text-align:right">Exist. actual</th>
+              <th style="text-align:center">Quitar</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+          <tfoot>
+            <tr>
+              <td colspan="5" style="text-align:right"><span>Total líneas:</span> <span id="totLineas">0</span></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </section>
+
+    <!-- ACCIONES -->
+    <section class="card section" style="display:flex; gap:10px; justify-content:flex-end">
+      <button id="btnGuardar" class="btn ok">Guardar entrada</button>
+      <button id="btnLimpiar" class="btn warn">Limpiar</button>
+    </section>
+
+    <!-- RESUMEN STOCK RAPIDO -->
+    <section class="card section">
+      <div class="row">
+        <label>Buscar en stock</label>
+        <input id="qStock" type="text" placeholder="Filtrar por nombre… (vista rápida)"/>
+      </div>
+      <div class="table-wrap" style="margin-top:8px; max-height:280px">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Producto</th>
+              <th>Código</th>
+              <th style="text-align:right">Stock</th>
+              <th style="text-align:right">Actualizado</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyStock"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+<script type="module">
+  // ===== Firebase =====
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getFirestore, collection, doc, getDoc, getDocs, setDoc, addDoc, runTransaction, serverTimestamp,
+    query, orderBy, Timestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "TU_APIKEY",
+    authDomain: "inventariopv-643f1.firebaseapp.com",
+    projectId: "inventariopv-643f1",
+    storageBucket: "inventariopv-643f1.appspot.com",
+    messagingSenderId: "96242533231",
+    appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  // ===== Constantes / paths =====
+  const rutaId     = "ruta_1";
+  const almacenId  = "ALMACEN_RUTA1"; // como pediste, en mayúsculas
+  const almacenRef = doc(db, "rutas_venta", rutaId, "almacenes", almacenId);
+  const colStock   = collection(almacenRef, "stock");
+  const colEntr    = collection(almacenRef, "entradas");
+
+  // ===== Helpers/UI =====
+  const $ = s => document.querySelector(s);
+  const pad2 = n => String(n).padStart(2, "0");
+  const toYYYYMMDD = (date) => { const d=new Date(date); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}` };
+  const money = n => "$"+(Number(n)||0).toFixed(2);
+
+  const elTipo      = $("#tipoEntrada");
+  const elFecha     = $("#fechaEntrada");
+  const elNotas     = $("#notas");
+  const elBuscador  = $("#buscador");
+  const elResultados= $("#resultados");
+  const elCant      = $("#cantidad");
+  const elBtnAdd    = $("#btnAgregar");
+  const elTbody     = $("#tbody");
+  const elTotLineas = $("#totLineas");
+  const elBtnGuardar= $("#btnGuardar");
+  const elBtnLimpiar= $("#btnLimpiar");
+  const elQStock    = $("#qStock");
+  const elTbodyStock= $("#tbodyStock");
+
+  let catalogo = [];
+  let codeIndex = new Map();
+  let captura = [];
+  let stockCache = new Map(); // productId -> {stock, updatedAt}
+
+  // ===== Carga catálogo y stock =====
+  async function ensureAlmacen(){
+    const s = await getDoc(almacenRef);
+    if(!s.exists()){
+      await setDoc(almacenRef, {
+        creado: serverTimestamp(),
+        nombre: almacenId,
+        rutaId
+      });
+    }
+  }
+
+  async function cargarCatalogo(){
+    catalogo = []; codeIndex.clear();
+    const snap = await getDocs(collection(db, "productos"));
+    snap.forEach(d=>{
+      const x = d.data();
+      if(x.activo===false) return;
+      const p = {
+        id: d.id,
+        nombre: x.concepto || "SIN NOMBRE",
+        codigo: (x.codigoBarra||"").toString(),
+        precioPublico: Number(x.precioPublico||0),
+      };
+      catalogo.push(p);
+      if(p.codigo) codeIndex.set(p.codigo.trim(), p.id);
+    });
+  }
+
+  async function cargarStock(){
+    stockCache.clear();
+    const qy = query(colStock, orderBy("productoId"));
+    const snap = await getDocs(qy);
+    snap.forEach(d=>{
+      const x=d.data();
+      stockCache.set(d.id, {
+        stock: Number(x.stock||0),
+        updatedAt: x.updatedAt && x.updatedAt.toDate ? x.updatedAt.toDate() : null
+      });
+    });
+    pintarStock(); // vista rápida
+  }
+
+  function pintarStock(filter=""){
+    const term = (filter||"").trim().toLowerCase();
+    elTbodyStock.innerHTML = "";
+    const items = catalogo
+      .filter(p => term==="" || p.nombre.toLowerCase().includes(term))
+      .slice(0,300);
+    items.forEach(p=>{
+      const st = stockCache.get(p.id) || {stock:0, updatedAt:null};
+      const tr=document.createElement("tr");
+      tr.innerHTML = `
+        <td>${p.nombre}</td>
+        <td>${p.codigo||""}</td>
+        <td style="text-align:right">${(st.stock||0).toFixed(2)}</td>
+        <td style="text-align:right">${st.updatedAt ? st.updatedAt.toLocaleString() : "-"}</td>
+      `;
+      elTbodyStock.appendChild(tr);
+    });
+  }
+
+  // ===== Buscador =====
+  function buscarLocal(qraw){
+    const q=(qraw||"").trim();
+    if(!q) return [];
+    const idByCode = codeIndex.get(q);
+    if(idByCode){
+      const p=catalogo.find(x=>x.id===idByCode);
+      return p ? [p] : [];
+    }
+    const nq=q.toLowerCase();
+    return catalogo.filter(p => p.nombre.toLowerCase().includes(nq));
+  }
+  function pintarResultados(hits){
+    elResultados.innerHTML="";
+    if(hits.length===0){ elResultados.style.display="none"; return; }
+    elResultados.style.display="block";
+    hits.forEach(p=>{
+      const div=document.createElement("div");
+      div.className="item";
+      const st=stockCache.get(p.id)?.stock||0;
+      div.innerHTML=`<span>${p.nombre}</span><span><small>${p.codigo||""}</small> · stock:${st.toFixed(2)}</span>`;
+      div.onclick=()=>{
+        elBuscador.value=p.nombre;
+        elResultados.style.display="none";
+        elCant.focus(); elCant.select();
+        elBtnAdd.dataset.pid = p.id;
+      };
+      elResultados.appendChild(div);
+    });
+  }
+  elBuscador.addEventListener("input", ()=>pintarResultados(buscarLocal(elBuscador.value)));
+  elBuscador.addEventListener("keydown", (e)=>{
+    if(e.key==="Enter"){
+      const hits=buscarLocal(elBuscador.value);
+      if(hits.length){ 
+        elBuscador.value=hits[0].nombre;
+        elResultados.style.display="none";
+        elCant.focus(); elCant.select();
+        elBtnAdd.dataset.pid = hits[0].id;
+      }
+    }
+  });
+
+  // ===== Captura =====
+  function render(){
+    elTbody.innerHTML="";
+    captura.forEach(line=>{
+      const st=stockCache.get(line.id)?.stock||0;
+      const tr=document.createElement("tr");
+      tr.innerHTML = `
+        <td>${line.nombre}</td>
+        <td>${line.codigo||""}</td>
+        <td style="text-align:right">${line.cantidad.toFixed(2)}</td>
+        <td style="text-align:right">${st.toFixed(2)}</td>
+        <td style="text-align:center"><button class="btn" style="padding:6px 10px; background:#e74c3c">✕</button></td>
+      `;
+      tr.querySelector("button").onclick=()=>{ captura = captura.filter(x=>x.id!==line.id); render(); };
+      elTbody.appendChild(tr);
+    });
+    elTotLineas.textContent = String(captura.length);
+  }
+  function agregarLinea(){
+    const pid = elBtnAdd.dataset.pid;
+    if(!pid){ alert("Selecciona un producto desde el buscador."); return; }
+    const p = catalogo.find(x=>x.id===pid);
+    const cant = Math.max(0.01, Number(elCant.value)||0);
+    const ex = captura.find(x=>x.id===pid);
+    if(ex) ex.cantidad += cant;
+    else captura.push({id:pid, nombre:p.nombre, codigo:p.codigo||"", cantidad:cant});
+    render();
+    // reset
+    elCant.value="1";
+    elBuscador.value="";
+    elBtnAdd.dataset.pid="";
+    elBuscador.focus();
+  }
+
+  // ===== Guardado =====
+  async function getNextFolioEntrada(){
+    // Consecutivo: consecutivos/ALMACEN_RUTA1_ENT
+    const ref = doc(db, "consecutivos", "ALMACEN_RUTA1_ENT");
+    const folio = await runTransaction(db, async (tx)=>{
+      const snap = await tx.get(ref);
+      if(!snap.exists()){ tx.set(ref,{valor:1, actualizado:serverTimestamp()}); return 1; }
+      const next = Number(snap.data().valor||0)+1;
+      tx.update(ref,{valor:next, actualizado:serverTimestamp()});
+      return next;
+    });
+    return `E-${String(folio).padStart(6,"0")}`;
+  }
+
+  async function guardarEntrada(){
+    if(captura.length===0){ alert("Agrega al menos un producto."); return; }
+    const tipo  = elTipo.value;
+    const fecha = elFecha.value ? new Date(elFecha.value+"T12:00:00") : new Date(); // medio día para evitar TZ
+    const fecha_dia = toYYYYMMDD(fecha);
+    const notas = (elNotas.value||"").trim();
+
+    const folio = await getNextFolioEntrada();
+
+    // 1) Guardar documento de entrada (cabecera)
+    const entDoc = await addDoc(colEntr, {
+      folio, tipo, fecha: Timestamp.fromDate(fecha), fecha_txt: fecha.toLocaleString(), fecha_dia,
+      notas, rutaId, almacenId,
+      lineas: captura.map(x=>({productoId:x.id, nombre:x.nombre, codigo:x.codigo, cantidad:x.cantidad})),
+      creado: serverTimestamp()
+    });
+
+    // 2) Actualizar existencias por transacción por cada línea (suma)
+    for(const it of captura){
+      const stockRef = doc(colStock, it.id); // doc id = productoId
+      await runTransaction(db, async (tx)=>{
+        const snap = await tx.get(stockRef);
+        const prev = snap.exists() ? Number(snap.data().stock||0) : 0;
+        const next = prev + Number(it.cantidad||0);
+        tx.set(stockRef, {
+          productoId: it.id,
+          nombre: it.nombre,
+          stock: +next.toFixed(2),
+          updatedAt: serverTimestamp()
+        }, {merge:true});
+      });
+    }
+
+    // 3) Refrescar stock cache y limpiar
+    await cargarStock();
+    captura = [];
+    render();
+    alert(`Entrada guardada: ${folio} (${captura.length} líneas)`);
+  }
+
+  function limpiar(){
+    captura=[]; render();
+    elBuscador.value=""; elCant.value="1"; elNotas.value="";
+    elBtnAdd.dataset.pid="";
+  }
+
+  // ===== Eventos =====
+  elBtnAdd.addEventListener("click", agregarLinea);
+  elCant.addEventListener("keydown", e=>{ if(e.key==="Enter") agregarLinea(); });
+  elBtnGuardar.addEventListener("click", guardarEntrada);
+  elBtnLimpiar.addEventListener("click", limpiar);
+  elQStock.addEventListener("input", ()=>pintarStock(elQStock.value));
+
+  // ===== Init =====
+  (async ()=>{
+    elFecha.value = toYYYYMMDD(new Date());
+    await ensureAlmacen();
+    await cargarCatalogo();
+    await cargarStock();
+  })();
+</script>
+</body>
+</html>
