@@ -378,14 +378,12 @@
         const snap = await tx.get(stockRef);
         const prev = snap.exists() ? Number(snap.data().stock||0) : 0;
         const next = prev + Number(it.cantidad||0);
-        tx.set(stockRef, {
-          productoId: it.id,
-          nombre: it.nombre,
-          stock: +next.toFixed(2),
-          updatedAt: serverTimestamp()
-        }, {merge:true});
-      });
-    }
+tx.set(stockRef, {
+  productoId: it.id,
+  stock: +next.toFixed(2),
+  updatedAt: serverTimestamp()
+}, {merge:true});
+
 
     // 3) Refrescar stock cache y limpiar
     await cargarStock();
