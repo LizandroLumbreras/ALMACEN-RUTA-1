@@ -3,366 +3,268 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>Rutas – Almacenes</title>
+  <title>Rutas de Venta – Crear ruta + Subcolecciones + Inventario Inicial</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     :root{
-      --azul:#00416A; --resalte:#0c6cbd; --bg:linear-gradient(to right,#00416A,#E4E5E6);
-      --card:#fff; --muted:#6b7280; --shadow:0 6px 18px rgba(0,0,0,.18); --radius:14px;
+      --azul:#00416A; --resalte:#0c6cbd; --ok:#1e8e3e;
+      --bg:linear-gradient(to right,#00416A,#E4E5E6);
+      --card: rgba(255,255,255,.95); --shadow:0 8px 24px rgba(0,0,0,.18);
+      --radius:16px;
     }
     *{box-sizing:border-box}
-    body{ margin:0; font-family:'Poppins',system-ui,Arial; background:var(--bg); color:#111; }
+    html,body{height:100%}
+    body{
+      margin:0; font-family:'Poppins',system-ui,Arial; background:var(--bg); color:#0f172a;
+      display:flex; min-height:100vh; align-items:flex-start; justify-content:center; padding:20px;
+    }
+    .wrap{width:100%; max-width:980px; display:grid; gap:18px;}
     header{
-      position:sticky; top:0; z-index:10; height:56px;
-      display:flex; align-items:center; justify-content:center; gap:10px;
-      color:#fff; font-weight:700; background:rgba(0,0,0,.55); backdrop-filter:blur(4px);
+      background:#003456; color:#fff; padding:14px 16px; border-radius:var(--radius);
+      box-shadow:var(--shadow); text-align:center; font-weight:600; letter-spacing:.3px;
     }
-    main{ max-width:960px; margin:16px auto; padding:0 12px; display:grid; gap:14px; }
-    .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; }
-    .card h3{ margin:0; padding:12px 14px; background:var(--azul); color:#fff; font-size:16px }
-    .card .body{ padding:14px; display:grid; gap:10px }
-    .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px }
-    label{ font-size:13px; color:#111; display:block; margin-bottom:4px }
-    input, textarea, select{
-      width:100%; padding:10px 12px; border:1px solid #e5e7eb; border-radius:10px; font-size:15px; outline:none;
+    .grid{ display:grid; grid-template-columns: 1fr 1.2fr; gap:18px; }
+    .card{
+      background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px;
+      backdrop-filter: blur(2px);
     }
-    textarea{ resize:vertical }
+    h2{margin:.2rem 0 1rem; font-size:1.1rem; color:#0b2740}
+    label{font-size:.9rem; color:#223; display:block; margin:10px 0 6px}
+    input, select{
+      width:100%; padding:10px 12px; border:1px solid #cfd8e3; border-radius:10px; outline:none;
+      font-family:inherit; font-size:.95rem; background:#fff;
+    }
+    .row{display:grid; grid-template-columns: 1fr 1fr; gap:12px}
     .btn{
-      border:none; padding:12px 14px; border-radius:12px; color:#fff; font-weight:700; cursor:pointer;
-      background:linear-gradient(180deg,var(--resalte),#094d85); box-shadow:var(--shadow);
+      background:var(--azul); color:#fff; border:none; padding:10px 14px; border-radius:12px;
+      font-weight:600; cursor:pointer; transition:.15s transform ease, .15s opacity ease;
     }
-    .btn:active{ transform:translateY(1px) }
-    .btn.sec{ background:linear-gradient(180deg,#6b7280,#374151) }
-    .btn.danger{ background:linear-gradient(180deg,#ef4444,#b91c1c) }
-    table{ width:100%; border-collapse:collapse }
-    thead th{ background:#f3f4f6; text-align:left; padding:10px; font-size:13px; position:sticky; top:0 }
-    tbody td{ border-top:1px solid #e5e7eb; padding:10px; font-size:14px; vertical-align:top }
-    .muted{ color:var(--muted) }
-    .chip{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:12px; color:#fff }
-    .ok{ background:#1e8e3e } .off{ background:#9ca3af }
+    .btn.secondary{background:#e2e8f0; color:#0f172a}
+    .btn:active{transform:scale(.98)}
+    .ok{color:var(--ok); font-weight:600}
+    .muted{color:#5b6b7a; font-size:.88rem}
+    .tag{display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2f7; font-size:.8rem; margin-left:8px}
+    .hr{height:1px; background:#e6e9ef; margin:14px 0}
+    .list{max-height:240px; overflow:auto; border:1px dashed #d5dbe4; border-radius:12px; padding:8px}
+    .item{display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-radius:10px}
+    .item:nth-child(odd){background:#fafbff}
+    .right{display:flex; align-items:center; gap:8px}
+    footer{color:#fff; text-align:center; opacity:.9; font-size:.85rem}
   </style>
 </head>
 <body>
-<header>Gestión de Almacenes – Ruta de Venta</header>
+  <div class="wrap">
+    <header>
+      RUTAS DE VENTA · La Proveedora
+      <span class="tag">Crear ruta con subcolecciones</span>
+      <span class="tag">Inventario inicial (+)</span>
+    </header>
 
-<main>
-  <!-- FORMULARIO -->
-  <section class="card">
-    <h3>Nuevo / Editar almacén</h3>
-    <div class="body">
-      <div class="row">
-        <div>
-          <label>Ruta</label>
-          <select id="rutaId">
-            <option value="ruta_1">ruta_1</option>
-            <option value="ruta_2">ruta_2</option>
-          </select>
+    <div class="grid">
+      <!-- Crear Ruta con subcolecciones -->
+      <section class="card">
+        <h2>1) Crear nueva ruta (con subcolecciones)</h2>
+        <label for="rutaId">ID de la ruta (ej. <b>ruta_2</b>)</label>
+        <div class="row">
+          <input id="rutaId" placeholder="ruta_2" value="ruta_2"/>
+          <button id="btnCrearRuta" class="btn">Crear/Verificar</button>
         </div>
-        <div>
-          <label>ID de almacén (docId)</label>
-          <input id="almId" placeholder="p.ej. matriz, bodega_centro">
-        </div>
-      </div>
+        <p id="msgRuta" class="muted"></p>
+        <div class="hr"></div>
+        <p class="muted">
+          Se crea <code>rutas_venta/{rutaId}</code> y las subcolecciones: <b>almacenes</b>, <b>clientes</b>, <b>cortes</b> y <b>ventas</b> (cada una con un doc <code>__meta__</code>).
+        </p>
+      </section>
 
-      <div class="row">
-        <div>
-          <label>Nombre</label>
-          <input id="almNombre" placeholder="Matriz / Bodega Fundidora">
+      <!-- Inventario inicial -->
+      <section class="card">
+        <h2>2) Inventario inicial (+)</h2>
+        <div class="row">
+          <div>
+            <label for="selAlmacen">Almacén</label>
+            <select id="selAlmacen"></select>
+          </div>
+          <div>
+            <label for="selRuta">Ruta</label>
+            <select id="selRuta"></select>
+          </div>
         </div>
-        <div>
-          <label>Ciudad</label>
-          <input id="almCiudad" placeholder="Linares, N.L.">
-        </div>
-      </div>
 
-      <div class="row">
-        <div>
-          <label>Teléfono</label>
-          <input id="almTel" placeholder="(821) 2121805">
-        </div>
-        <div>
-          <label>Responsable</label>
-          <input id="almResp" placeholder="Nombre del encargado">
-        </div>
-      </div>
+        <label for="selProducto">Producto</label>
+        <select id="selProducto"></select>
 
-      <div class="row">
-        <div>
-          <label>Latitud</label>
-          <input id="almLat" type="number" step="0.000001" placeholder="24.856321">
+        <div class="row">
+          <div>
+            <label for="cantidad">Cantidad a ingresar</label>
+            <input id="cantidad" type="number" min="1" step="1" placeholder="0">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button id="btnAgregar" class="btn">Agregar entrada (+)</button>
+          </div>
         </div>
-        <div>
-          <label>Longitud</label>
-          <input id="almLng" type="number" step="0.000001" placeholder="-99.567890">
-        </div>
-      </div>
 
-      <div class="row">
-        <div>
-          <label>Capacidad (opcional)</label>
-          <input id="almCap" type="number" step="0.01" placeholder="m² o pallets">
-        </div>
-        <div style="display:flex; align-items:center; gap:8px; padding-top:22px">
-          <input id="almActivo" type="checkbox" checked>
-          <label for="almActivo" style="margin:0">Activo</label>
-        </div>
-      </div>
+        <p id="msgInv" class="muted"></p>
 
-      <div>
-        <label>Dirección</label>
-        <input id="almDir" placeholder="Calle, número, colonia">
-      </div>
-
-      <div>
-        <label>Notas</label>
-        <textarea id="almNotas" rows="2" placeholder="Observaciones…"></textarea>
-      </div>
-
-      <div style="display:flex; gap:10px; flex-wrap:wrap">
-        <button class="btn" id="btnGuardar">Guardar</button>
-        <button class="btn sec" id="btnLimpiar" type="button">Limpiar</button>
-      </div>
+        <div class="hr"></div>
+        <h2>Movimientos agregados (sesión)</h2>
+        <div id="movList" class="list"></div>
+      </section>
     </div>
-  </section>
 
-  <!-- LISTA -->
-  <section class="card">
-    <h3>Almacenes de la ruta</h3>
-    <div class="body" style="padding:0">
-      <div style="padding:10px 14px; display:flex; gap:10px; align-items:center;">
-        <span class="muted">Ruta:</span>
-        <select id="rutaLista" style="max-width:220px"></select>
-        <button class="btn sec" id="btnRefrescar" type="button" style="margin-left:auto">Refrescar</button>
-      </div>
-      <div style="max-height:60vh; overflow:auto;">
-        <table>
-          <thead>
-            <tr>
-              <th>Almacén</th>
-              <th>Ubicación</th>
-              <th>Contacto</th>
-              <th>Estado</th>
-              <th style="width:160px">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tbodyAlm"></tbody>
-        </table>
-      </div>
-    </div>
-  </section>
-</main>
+    <footer>© La Proveedora · UI corporativa</footer>
+  </div>
 
-<!-- Firebase + lógica -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore, collection, doc, setDoc, getDocs, getDoc, updateDoc,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  <!-- Firebase SDK v9 (modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy,
+      serverTimestamp, writeBatch, increment
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-  // === MISMO PROYECTO QUE TU POS ===
-  const firebaseConfig = {
-    apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
-    authDomain: "inventariopv-643f1.firebaseapp.com",
-    projectId: "inventariopv-643f1",
-    storageBucket: "inventariopv-643f1.appspot.com",
-    messagingSenderId: "96242533231",
-    appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
-  };
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
-
-  // ====== UI refs ======
-  const rutaId       = document.getElementById('rutaId');
-  const almId        = document.getElementById('almId');
-  const almNombre    = document.getElementById('almNombre');
-  const almCiudad    = document.getElementById('almCiudad');
-  const almTel       = document.getElementById('almTel');
-  const almResp      = document.getElementById('almResp');
-  const almLat       = document.getElementById('almLat');
-  const almLng       = document.getElementById('almLng');
-  const almCap       = document.getElementById('almCap');
-  const almActivo    = document.getElementById('almActivo');
-  const almDir       = document.getElementById('almDir');
-  const almNotas     = document.getElementById('almNotas');
-  const btnGuardar   = document.getElementById('btnGuardar');
-  const btnLimpiar   = document.getElementById('btnLimpiar');
-
-  const rutaLista    = document.getElementById('rutaLista');
-  const btnRefrescar = document.getElementById('btnRefrescar');
-  const tbodyAlm     = document.getElementById('tbodyAlm');
-
-  // sincroniza select de la lista con el del form
-  function syncRutaLista(){
-    rutaLista.innerHTML = '';
-    [...rutaId.options].forEach(opt=>{
-      const o = document.createElement('option');
-      o.value = opt.value; o.textContent = opt.textContent;
-      rutaLista.appendChild(o);
-    });
-    rutaLista.value = rutaId.value;
-  }
-  rutaId.addEventListener('change', syncRutaLista);
-
-  // Helpers
-  const $money = n => '$'+(Number(n)||0).toFixed(2);
-  const safeId = s => (s||'').toString().trim();
-
-  function limpiar(){
-    almId.value=''; almNombre.value=''; almCiudad.value='';
-    almTel.value=''; almResp.value=''; almLat.value='';
-    almLng.value=''; almCap.value=''; almDir.value='';
-    almNotas.value=''; almActivo.checked=true;
-    almId.focus();
-  }
-
-  // Guardar (create/update) almacén
-  async function guardarAlmacen(){
-    const ruta = safeId(rutaId.value);
-    const id   = safeId(almId.value);
-    if(!ruta){ alert('Selecciona una ruta'); return; }
-    if(!id){ alert('Escribe el ID del almacén'); return; }
-
-    const payload = {
-      nombre: safeId(almNombre.value) || id,
-      ciudad: safeId(almCiudad.value) || null,
-      telefono: safeId(almTel.value) || null,
-      responsable: safeId(almResp.value) || null,
-      direccion: safeId(almDir.value) || null,
-      notas: safeId(almNotas.value) || null,
-      capacidad: Number(almCap.value||0) || null,
-      activo: !!almActivo.checked,
-      geo: {
-        lat: almLat.value ? Number(almLat.value) : null,
-        lng: almLng.value ? Number(almLng.value) : null
-      },
-      actualizado: serverTimestamp(),
-      creado: serverTimestamp()
+    // ===== Configura Firebase =====
+    const firebaseConfig = {
+      apiKey: "TU_APIKEY",
+      authDomain: "TU_AUTHDOMAIN",
+      projectId: "TU_PROJECTID",
+      storageBucket: "TU_BUCKET",
+      messagingSenderId: "TU_SENDER",
+      appId: "TU_APPID"
     };
 
-    await setDoc(doc(db, 'rutas_venta', ruta, 'almacenes', id), payload, { merge:true });
-    alert('Almacén guardado');
-    await cargarAlmacenes();
-    // precarga el doc recién guardado para edición posterior
-    cargarEnFormulario(ruta, id);
-  }
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
 
-  // Listar almacenes de la ruta seleccionada en la lista
-  async function cargarAlmacenes(){
-    const ruta = safeId(rutaLista.value);
-    tbodyAlm.innerHTML = '<tr><td class="muted" colspan="5" style="padding:12px">Cargando…</td></tr>';
-    try{
-      const snap = await getDocs(collection(db, 'rutas_venta', ruta, 'almacenes'));
-      const rows = [];
-      snap.forEach(d=>{
-        const a = d.data();
-        rows.push({
-          id:d.id,
-          nombre:a.nombre||d.id,
-          ciudad:a.ciudad||'',
-          tel:a.telefono||'',
-          resp:a.responsable||'',
-          activo:(a.activo!==false),
-          lat:a.geo?.lat??null, lng:a.geo?.lng??null,
-          dir:a.direccion||'', notas:a.notas||''
-        });
-      });
-      if(!rows.length){
-        tbodyAlm.innerHTML = '<tr><td class="muted" colspan="5" style="padding:12px">Sin almacenes</td></tr>';
-        return;
-      }
-      tbodyAlm.innerHTML = '';
-      rows.sort((a,b)=>a.nombre.localeCompare(b.nombre));
-      rows.forEach(a=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>
-            <div style="font-weight:600">${a.nombre}</div>
-            <div class="muted">${a.id}</div>
-            <div class="muted">${a.dir||''}</div>
-          </td>
-          <td>
-            <div>${a.ciudad||''}</div>
-            <div class="muted">${(a.lat!=null&&a.lng!=null)?(a.lat+', '+a.lng):''}</div>
-          </td>
-          <td>
-            <div>${a.tel||''}</div>
-            <div class="muted">${a.resp||''}</div>
-          </td>
-          <td>
-            <span class="chip ${a.activo?'ok':'off'}">${a.activo?'ACTIVO':'INACTIVO'}</span>
-          </td>
-          <td>
-            <div style="display:flex; gap:8px; flex-wrap:wrap">
-              <button class="btn sec" data-act="edit" data-id="${a.id}">Editar</button>
-              <button class="btn" data-act="toggle" data-id="${a.id}">${a.activo?'Desactivar':'Activar'}</button>
-            </div>
-          </td>
-        `;
-        tbodyAlm.appendChild(tr);
-      });
-    }catch(e){
-      console.error(e);
-      tbodyAlm.innerHTML = '<tr><td class="muted" colspan="5" style="padding:12px;color:#b91c1c">Error al cargar</td></tr>';
+    // ===== Utilidades UI =====
+    const $ = (id)=>document.getElementById(id);
+    const rutaIdInput = $("rutaId");
+    const btnCrearRuta = $("btnCrearRuta");
+    const msgRuta = $("msgRuta");
+
+    const selAlmacen = $("selAlmacen");
+    const selRuta    = $("selRuta");
+    const selProducto= $("selProducto");
+    const cantidad   = $("cantidad");
+    const btnAgregar = $("btnAgregar");
+    const msgInv     = $("msgInv");
+    const movList    = $("movList");
+
+    const state = { almacenes:[], rutas:[], productos:[], movimientosLocal:[] };
+
+    function toast(el, text, ok=false){
+      el.textContent = text;
+      el.style.color = ok ? "#1e8e3e" : "#5b6b7a";
     }
-  }
 
-  // Cargar un doc al formulario
-  async function cargarEnFormulario(ruta, id){
-    try{
-      const snap = await getDoc(doc(db, 'rutas_venta', ruta, 'almacenes', id));
-      if(!snap.exists()){ alert('No existe ese almacén'); return; }
-      const a = snap.data();
-      rutaId.value = ruta;
-      syncRutaLista();
+    // ===== Catálogos (top-level) =====
+    async function cargarAlmacenes(){
+      const qSnap = await getDocs(query(collection(db,"almacenes"), orderBy("nombre","asc")));
+      state.almacenes = qSnap.docs.map(d=>({id:d.id, ...d.data()}));
+      selAlmacen.innerHTML = state.almacenes.map(a=>`<option value="${a.id}">${a.nombre||a.id}</option>`).join("") || `<option value="">(sin almacenes)</option>`;
+    }
+    async function cargarRutas(){
+      const qSnap = await getDocs(collection(db,"rutas_venta"));
+      state.rutas = qSnap.docs.map(d=>({id:d.id, ...d.data()}));
+      selRuta.innerHTML = state.rutas.sort((a,b)=>a.id.localeCompare(b.id))
+        .map(r=>`<option value="${r.id}">${r.id}</option>`).join("") || `<option value="">(sin rutas)</option>`;
+    }
+    async function cargarProductos(){
+      const qSnap = await getDocs(collection(db,"productos"));
+      state.productos = qSnap.docs.map(d=>({id:d.id, ...d.data()}));
+      selProducto.innerHTML = state.productos
+        .sort((a,b)=>(a.descripcion||a.id).localeCompare(b.descripcion||b.id))
+        .map(p=>`<option value="${p.id}">${(p.descripcion||p.nombre||p.id)} · ${p.codigo||""}</option>`).join("")
+        || `<option value="">(sin productos)</option>`;
+    }
 
-      almId.value     = id;
-      almNombre.value = a.nombre||'';
-      almCiudad.value = a.ciudad||'';
-      almTel.value    = a.telefono||'';
-      almResp.value   = a.responsable||'';
-      almLat.value    = (a.geo?.lat??'');
-      almLng.value    = (a.geo?.lng??'');
-      almCap.value    = (a.capacidad??'');
-      almDir.value    = a.direccion||'';
-      almNotas.value  = a.notas||'';
-      almActivo.checked = (a.activo!==false);
-      window.scrollTo({top:0,behavior:'smooth'});
-    }catch(e){ console.error(e); alert('No se pudo abrir el almacén'); }
-  }
+    // ===== Crear ruta + subcolecciones =====
+    async function crearRutaConSubcolecciones(rutaId){
+      const rutaRef = doc(db,"rutas_venta",rutaId);
+      const snap = await getDoc(rutaRef);
 
-  // Toggle activo
-  async function toggleActivo(id){
-    const ruta = safeId(rutaLista.value);
-    const ref  = doc(db,'rutas_venta',ruta,'almacenes',id);
-    const snap = await getDoc(ref);
-    if(!snap.exists()) return;
-    const activo = !(snap.data().activo!==false); // true si estaba activo
-    await updateDoc(ref,{ activo: !activo, actualizado: serverTimestamp() });
-    await cargarAlmacenes();
-  }
+      if(!snap.exists()){
+        await setDoc(rutaRef, {
+          creadaEn: serverTimestamp(),
+          activa: true,
+          nota: "Creada desde UI – con subcolecciones"
+        });
+      }
 
-  // Eventos
-  btnGuardar.addEventListener('click', guardarAlmacen);
-  btnLimpiar.addEventListener('click', (e)=>{ e.preventDefault(); limpiar(); });
+      // Para que Firestore muestre las subcolecciones, creamos un doc marcador en cada una.
+      const subcols = ["almacenes","clientes","cortes","ventas"]; // <- exactamente como lo pediste
+      const batch = writeBatch(db);
+      subcols.forEach(nombre=>{
+        const metaRef = doc(collection(rutaRef, nombre), "__meta__");
+        batch.set(metaRef, { createdAt: serverTimestamp(), init: true, note: "doc marcador para visibilidad" }, {merge:true});
+      });
+      await batch.commit();
+    }
 
-  syncRutaLista();
-  btnRefrescar.addEventListener('click', cargarAlmacenes);
-  rutaLista.addEventListener('change', cargarAlmacenes);
+    btnCrearRuta.addEventListener("click", async ()=>{
+      const rutaId = (rutaIdInput.value||"").trim();
+      if(!rutaId){ toast(msgRuta,"Escribe un ID de ruta, por ejemplo ruta_2"); return; }
 
-  // Delegación en la tabla
-  tbodyAlm.addEventListener('click', (e)=>{
-    const btn = e.target.closest('button[data-act]');
-    if(!btn) return;
-    const act = btn.getAttribute('data-act');
-    const id  = btn.getAttribute('data-id');
-    const ruta = safeId(rutaLista.value);
-    if(act==='edit')   cargarEnFormulario(ruta,id);
-    if(act==='toggle') toggleActivo(id);
-  });
+      await crearRutaConSubcolecciones(rutaId);
+      toast(msgRuta, `Ruta ${rutaId} lista con subcolecciones: almacenes, clientes, cortes, ventas.`, true);
 
-  // Primera carga
-  await cargarAlmacenes();
-</script>
+      await cargarRutas();
+      selRuta.value = rutaId; // selecciona la recién creada
+    });
+
+    // ===== Inventario inicial (+) =====
+    btnAgregar.addEventListener("click", async ()=>{
+      const rutaId = selRuta.value;
+      const almacenId = selAlmacen.value;
+      const productoId = selProducto.value;
+      const cant = Number(cantidad.value);
+
+      if(!rutaId){ toast(msgInv,"Selecciona una ruta."); return; }
+      if(!almacenId){ toast(msgInv,"Selecciona un almacén."); return; }
+      if(!productoId){ toast(msgInv,"Selecciona un producto."); return; }
+      if(!cant || cant <= 0){ toast(msgInv,"Indica una cantidad válida (>0)."); return; }
+
+      // 1) Guardar movimiento en subcolección de la ruta (puedes cambiar el nombre si lo prefieres)
+      const movColRef = collection(db,"rutas_venta",rutaId,"inventario_inicial");
+      const mov = { tipo:"entrada_inicial", almacenId, productoId, cantidad:cant, ts:serverTimestamp() };
+
+      // 2) Actualizar existencias por almacén (colección global "existencias")
+      const exisRef = doc(db,"existencias", `${almacenId}_${productoId}`);
+
+      const batch = writeBatch(db);
+      const nuevoMovRef = doc(movColRef); // autoId
+      batch.set(nuevoMovRef, mov, {merge:true});
+      batch.set(exisRef, { almacenId, productoId, stock: increment(cant), upd: serverTimestamp() }, {merge:true});
+      await batch.commit();
+
+      // UI
+      state.movimientosLocal.unshift({id:nuevoMovRef.id, ...mov, cantidad:cant});
+      pintaMovs();
+      cantidad.value = "";
+      toast(msgInv, `Entrada (+${cant}) registrada en ${almacenId} para ${productoId} en ${rutaId}.`, true);
+    });
+
+    function pintaMovs(){
+      movList.innerHTML = state.movimientosLocal.map(m=>{
+        const prod = state.productos.find(p=>p.id===m.productoId);
+        const nombre = prod?.descripcion || prod?.nombre || m.productoId;
+        return `
+          <div class="item">
+            <div>
+              <b>${nombre}</b>
+              <div class="muted">Prod: ${m.productoId} · Almacén: ${m.almacenId}</div>
+            </div>
+            <div class="right"><span class="ok">+${m.cantidad}</span></div>
+          </div>
+        `;
+      }).join("") || `<div class="muted" style="padding:8px 10px">Sin movimientos en esta sesión.</div>`;
+    }
+
+    // ===== Init =====
+    (async function init(){
+      await Promise.all([cargarAlmacenes(), cargarRutas(), cargarProductos()]);
+      if(state.rutas.find(r=>r.id==="ruta_2")) selRuta.value = "ruta_2";
+    })();
+  </script>
 </body>
 </html>
