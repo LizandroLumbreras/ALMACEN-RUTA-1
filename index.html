@@ -3,129 +3,82 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>Rutas de Venta – Crear ruta + Subcolecciones + Inventario Inicial</title>
+  <title>Entradas (almacenes top-level) – La Proveedora</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
-    :root{
-      --azul:#00416A; --resalte:#0c6cbd; --ok:#1e8e3e;
-      --bg:linear-gradient(to right,#00416A,#E4E5E6);
-      --card: rgba(255,255,255,.95); --shadow:0 8px 24px rgba(0,0,0,.18);
-      --radius:16px;
-    }
+    :root{ --azul:#00416A; --ok:#1e8e3e; --bg:linear-gradient(to right,#00416A,#E4E5E6);
+           --card:rgba(255,255,255,.96); --shadow:0 10px 28px rgba(0,0,0,.16); --radius:16px; }
     *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; font-family:'Poppins',system-ui,Arial; background:var(--bg); color:#0f172a;
-      display:flex; min-height:100vh; align-items:flex-start; justify-content:center; padding:20px;
-    }
-    .wrap{width:100%; max-width:980px; display:grid; gap:18px;}
-    header{
-      background:#003456; color:#fff; padding:14px 16px; border-radius:var(--radius);
-      box-shadow:var(--shadow); text-align:center; font-weight:600; letter-spacing:.3px;
-    }
-    .grid{ display:grid; grid-template-columns: 1fr 1.2fr; gap:18px; }
-    .card{
-      background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px;
-      backdrop-filter: blur(2px);
-    }
+    body{ margin:0; font-family:'Poppins',system-ui,Arial; background:var(--bg); color:#0f172a;
+          min-height:100vh; padding:20px; display:flex; justify-content:center; }
+    .wrap{width:100%; max-width:900px; display:grid; gap:18px}
+    header{ background:#003456; color:#fff; padding:14px 16px; border-radius:var(--radius);
+            box-shadow:var(--shadow); text-align:center; font-weight:600; }
+    .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px; }
     h2{margin:.2rem 0 1rem; font-size:1.1rem; color:#0b2740}
-    label{font-size:.9rem; color:#223; display:block; margin:10px 0 6px}
-    input, select{
-      width:100%; padding:10px 12px; border:1px solid #cfd8e3; border-radius:10px; outline:none;
-      font-family:inherit; font-size:.95rem; background:#fff;
-    }
-    .row{display:grid; grid-template-columns: 1fr 1fr; gap:12px}
-    .btn{
-      background:var(--azul); color:#fff; border:none; padding:10px 14px; border-radius:12px;
-      font-weight:600; cursor:pointer; transition:.15s transform ease, .15s opacity ease;
-    }
-    .btn.secondary{background:#e2e8f0; color:#0f172a}
-    .btn:active{transform:scale(.98)}
-    .ok{color:var(--ok); font-weight:600}
-    .muted{color:#5b6b7a; font-size:.88rem}
-    .tag{display:inline-block; padding:4px 8px; border-radius:999px; background:#eef2f7; font-size:.8rem; margin-left:8px}
+    label{font-size:.9rem; display:block; margin:10px 0 6px}
+    input,select{ width:100%; padding:10px 12px; border:1px solid #cfd8e3; border-radius:10px; background:#fff; }
+    .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    .btn{ background:var(--azul); color:#fff; border:none; padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer; }
+    .muted{color:#5b6b7a; font-size:.88rem} .ok{color:var(--ok); font-weight:600}
     .hr{height:1px; background:#e6e9ef; margin:14px 0}
-    .list{max-height:240px; overflow:auto; border:1px dashed #d5dbe4; border-radius:12px; padding:8px}
-    .item{display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-radius:10px}
+    .list{max-height:320px; overflow:auto; border:1px dashed #d5dbe4; border-radius:12px; padding:8px}
+    .item{display:flex; justify-content:space-between; padding:8px 10px; border-radius:10px}
     .item:nth-child(odd){background:#fafbff}
-    .right{display:flex; align-items:center; gap:8px}
-    footer{color:#fff; text-align:center; opacity:.9; font-size:.85rem}
+    .pill{padding:3px 8px; border-radius:999px; background:#eef2f7; font-size:.78rem}
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      RUTAS DE VENTA · La Proveedora
-      <span class="tag">Crear ruta con subcolecciones</span>
-      <span class="tag">Inventario inicial (+)</span>
-    </header>
+    <header>ENTRADAS · Almacenes (top-level) → stock + log por ruta</header>
 
-    <div class="grid">
-      <!-- Crear Ruta con subcolecciones -->
-      <section class="card">
-        <h2>1) Crear nueva ruta (con subcolecciones)</h2>
-        <label for="rutaId">ID de la ruta (ej. <b>ruta_2</b>)</label>
-        <div class="row">
-          <input id="rutaId" placeholder="ruta_2" value="ruta_2"/>
-          <button id="btnCrearRuta" class="btn">Crear/Verificar</button>
+    <section class="card">
+      <h2>Registrar entrada (+)</h2>
+
+      <div class="row">
+        <div>
+          <label for="selRuta">Ruta (identificador)</label>
+          <select id="selRuta"></select>
         </div>
-        <p id="msgRuta" class="muted"></p>
-        <div class="hr"></div>
-        <p class="muted">
-          Se crea <code>rutas_venta/{rutaId}</code> y las subcolecciones: <b>almacenes</b>, <b>clientes</b>, <b>cortes</b> y <b>ventas</b> (cada una con un doc <code>__meta__</code>).
-        </p>
-      </section>
-
-      <!-- Inventario inicial -->
-      <section class="card">
-        <h2>2) Inventario inicial (+)</h2>
-        <div class="row">
-          <div>
-            <label for="selAlmacen">Almacén</label>
-            <select id="selAlmacen"></select>
-          </div>
-          <div>
-            <label for="selRuta">Ruta</label>
-            <select id="selRuta"></select>
-          </div>
+        <div>
+          <label for="selAlmacen">Almacén (colección <b>almacenes</b>)</label>
+          <select id="selAlmacen"></select>
+          <div class="muted" id="hintAlm"></div>
         </div>
+      </div>
 
-        <label for="selProducto">Producto</label>
-        <select id="selProducto"></select>
-
-        <div class="row">
-          <div>
-            <label for="cantidad">Cantidad a ingresar</label>
-            <input id="cantidad" type="number" min="1" step="1" placeholder="0">
-          </div>
-          <div>
-            <label>&nbsp;</label>
-            <button id="btnAgregar" class="btn">Agregar entrada (+)</button>
-          </div>
+      <div class="row">
+        <div>
+          <label for="selProducto">Producto</label>
+          <select id="selProducto"></select>
         </div>
+        <div>
+          <label for="cantidad">Cantidad</label>
+          <input id="cantidad" type="number" min="1" step="1" placeholder="0">
+        </div>
+      </div>
 
-        <p id="msgInv" class="muted"></p>
+      <div style="margin-top:10px">
+        <button id="btnEntrada" class="btn">Agregar entrada (+)</button>
+        <span id="msg" class="muted"></span>
+      </div>
 
-        <div class="hr"></div>
-        <h2>Movimientos agregados (sesión)</h2>
-        <div id="movList" class="list"></div>
-      </section>
-    </div>
-
-    <footer>© La Proveedora · UI corporativa</footer>
+      <div class="hr"></div>
+      <h2>Últimas entradas (sesión)</h2>
+      <div id="movList" class="list"></div>
+    </section>
   </div>
 
   <!-- Firebase (CDN, ESM) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import {
-      initializeFirestore,               // usamos initializeFirestore (parche transporte)
-      doc, getDoc, setDoc, collection,   // helpers Firestore
-      addDoc, getDocs, query, orderBy,
+      initializeFirestore,
+      doc, setDoc, getDoc, collection, getDocs, query, orderBy,
       serverTimestamp, writeBatch, increment
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
 
-    // ===== Configuración del proyecto (TU PROYECTO) =====
+    // === TU CONFIG ===
     const firebaseConfig = {
       apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
       authDomain: "inventariopv-643f1.firebaseapp.com",
@@ -134,155 +87,118 @@
       messagingSenderId: "96242533231",
       appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
     };
-
     const app = initializeApp(firebaseConfig);
+    const db  = initializeFirestore(app, { experimentalAutoDetectLongPolling:true, useFetchStreams:false });
 
-    // 🔧 PARCHE: evita el error 400 del canal "Listen" usando long-polling cuando es necesario
-    const db  = initializeFirestore(app, {
-      experimentalAutoDetectLongPolling: true,
-      useFetchStreams: false
-      // Si tu red es MUY estricta, descomenta para forzar:
-      // experimentalForceLongPolling: true
-    });
+    // === UI ===
+    const $ = id => document.getElementById(id);
+    const selRuta = $("selRuta"), selAlmacen = $("selAlmacen"), selProducto = $("selProducto");
+    const cantidad = $("cantidad"), btnEntrada = $("btnEntrada"), msg = $("msg"), movList = $("movList");
+    const hintAlm = $("hintAlm");
 
-    // ===== Utilidades UI =====
-    const $ = (id)=>document.getElementById(id);
-    const rutaIdInput = $("rutaId");
-    const btnCrearRuta = $("btnCrearRuta");
-    const msgRuta = $("msgRuta");
+    const state = { rutas:[], almacenes:[], productos:[], entradas:[] };
 
-    const selAlmacen = $("selAlmacen");
-    const selRuta    = $("selRuta");
-    const selProducto= $("selProducto");
-    const cantidad   = $("cantidad");
-    const btnAgregar = $("btnAgregar");
-    const msgInv     = $("msgInv");
-    const movList    = $("movList");
+    function toast(text, ok=false){ msg.textContent=text; msg.className= ok? "ok":"muted"; }
 
-    const state = { almacenes:[], rutas:[], productos:[], movimientosLocal:[] };
-
-    function toast(el, text, ok=false){
-      el.textContent = text;
-      el.style.color = ok ? "#1e8e3e" : "#5b6b7a";
-    }
-
-    // ===== Cargar catálogos top-level =====
-    async function cargarAlmacenes(){
-      const qSnap = await getDocs(query(collection(db,"almacenes"), orderBy("nombre","asc")));
-      state.almacenes = qSnap.docs.map(d=>({id:d.id, ...d.data()}));
-      selAlmacen.innerHTML = state.almacenes.map(a=>`<option value="${a.id}">${a.nombre||a.id}</option>`).join("") || `<option value="">(sin almacenes)</option>`;
-    }
+    // === Cargar catálogos ===
     async function cargarRutas(){
-      const qSnap = await getDocs(collection(db,"rutas_venta"));
-      state.rutas = qSnap.docs.map(d=>({id:d.id, ...d.data()}));
-      selRuta.innerHTML = state.rutas.sort((a,b)=>a.id.localeCompare(b.id))
-        .map(r=>`<option value="${r.id}">${r.id}</option>`).join("") || `<option value="">(sin rutas)</option>`;
+      const snap = await getDocs(collection(db,"rutas_venta"));
+      state.rutas = snap.docs.map(d=>({id:d.id}));
+      selRuta.innerHTML = state.rutas.map(r=>`<option value="${r.id}">${r.id}</option>`).join("") || `<option value="">(sin rutas)</option>`;
+    }
+    async function cargarAlmacenes(){
+      const qSnap = await getDocs(query(collection(db,"almacenes"), orderBy("id"))); // si no hay campo id, ordena por nombre luego
+      state.almacenes = qSnap.docs.map(d=>({id:d.id, ...d.data()}));
+      renderAlmacenes(); // primera carga (sin filtro)
     }
     async function cargarProductos(){
-      const qSnap = await getDocs(collection(db,"productos"));
-      state.productos = qSnap.docs.map(d=>({id:d.id, ...d.data()}));
+      const snap = await getDocs(collection(db,"productos"));
+      state.productos = snap.docs.map(d=>({id:d.id, ...d.data()}));
       selProducto.innerHTML = state.productos
         .sort((a,b)=>(a.descripcion||a.id).localeCompare(b.descripcion||b.id))
         .map(p=>`<option value="${p.id}">${(p.descripcion||p.nombre||p.id)} ${p.codigo?("· "+p.codigo):""}</option>`).join("")
         || `<option value="">(sin productos)</option>`;
     }
 
-// ===== Crear ruta + subcolecciones (parche sin IDs reservados) =====
-async function crearRutaConSubcolecciones(rutaId){
-  const rutaRef = doc(db,"rutas_venta",rutaId);
-  const snap = await getDoc(rutaRef);
+    // Filtrado de almacenes según ruta:
+    // 1) Si el doc de 'almacenes' trae campo rutaId, se usa ese.
+    // 2) Si no, se aplica convención por nombre: 'Almacen_Ruta_#' a partir del id de la ruta seleccionada.
+    function renderAlmacenes(){
+      const rutaId = selRuta.value; // ej. "ruta_2"
+      let filtered = state.almacenes;
 
-  if(!snap.exists()){
-    await setDoc(rutaRef, {
-      creadaEn: serverTimestamp(),
-      activa: true,
-      nota: "Creada desde UI – con subcolecciones"
-    });
-  }
-
-  // Crea un documento marcador NO reservado en cada subcolección
-  const subcols = ["almacenes","clientes","cortes","ventas"];
-  const batch = writeBatch(db);
-  subcols.forEach(nombre=>{
-    const keepRef = doc(collection(rutaRef, nombre), "_init"); // 👈 ya no usamos "__meta__"
-    batch.set(keepRef, { createdAt: serverTimestamp(), init: true }, {merge:true});
-  });
-  await batch.commit();
-}
-
-
-    btnCrearRuta.addEventListener("click", async ()=>{
-      const rutaId = (rutaIdInput.value||"").trim();
-      if(!rutaId){ toast(msgRuta,"Escribe un ID de ruta, por ejemplo ruta_2"); return; }
-
-      try{
-        await crearRutaConSubcolecciones(rutaId);
-        toast(msgRuta, `Ruta ${rutaId} lista con subcolecciones: almacenes, clientes, cortes, ventas.`, true);
-        await cargarRutas();
-        selRuta.value = rutaId;
-      }catch(err){
-        console.error(err);
-        toast(msgRuta, "Error creando la ruta. Revisa reglas y config.");
+      if(rutaId){
+        const byField = state.almacenes.filter(a => (a.rutaId && a.rutaId === rutaId));
+        if(byField.length){
+          filtered = byField;
+          hintAlm.textContent = "Filtrado por campo rutaId en documentos de 'almacenes'.";
+        }else{
+          // convención por nombre
+          const suf = rutaId.replace("ruta_", "Ruta_"); // "Ruta_2"
+          const needle = `Almacen_${suf}`;            // "Almacen_Ruta_2"
+          filtered = state.almacenes.filter(a => a.id === needle || (a.nombre && a.nombre.includes(suf)));
+          hintAlm.textContent = `Filtrado por convención de nombre: ${needle}`;
+        }
+      }else{
+        hintAlm.textContent = "Selecciona una ruta para sugerir su almacén.";
       }
-    });
 
-    // ===== Inventario inicial (+) =====
-    btnAgregar.addEventListener("click", async ()=>{
+      selAlmacen.innerHTML = filtered.map(a=>`<option value="${a.id}">${a.nombre||a.id}</option>`).join("")
+        || `<option value="">(sin coincidencias; selecciona manualmente)</option>`;
+    }
+
+    selRuta.addEventListener("change", renderAlmacenes);
+
+    // === ENTRADA (+) ===
+    btnEntrada.addEventListener("click", async ()=>{
       const rutaId = selRuta.value;
       const almacenId = selAlmacen.value;
       const productoId = selProducto.value;
       const cant = Number(cantidad.value);
 
-      if(!rutaId){ toast(msgInv,"Selecciona una ruta."); return; }
-      if(!almacenId){ toast(msgInv,"Selecciona un almacén."); return; }
-      if(!productoId){ toast(msgInv,"Selecciona un producto."); return; }
-      if(!cant || cant <= 0){ toast(msgInv,"Indica una cantidad válida (>0)."); return; }
+      if(!rutaId){ toast("Selecciona una ruta."); return; }
+      if(!almacenId){ toast("Selecciona un almacén (colección 'almacenes')."); return; }
+      if(!productoId){ toast("Selecciona un producto."); return; }
+      if(!cant || cant<=0){ toast("Cantidad inválida."); return; }
 
       try{
-        // 1) Guardar movimiento en la ruta
-        const movColRef = collection(db,"rutas_venta",rutaId,"inventario_inicial");
-        const mov = { tipo:"entrada_inicial", almacenId, productoId, cantidad:cant, ts:serverTimestamp() };
+        // Stock en el almacén top-level
+        const exisRef = doc(db, "almacenes", almacenId, "existencias", productoId);
+        // Log por ruta
+        const logRef  = collection(db, "rutas_venta", rutaId, "entradas");
 
-        // 2) Actualizar existencias por almacén (colección global "existencias")
-        const exisRef = doc(db,"existencias", `${almacenId}_${productoId}`);
+        const mov = { tipo:"entrada", rutaId, almacenId, productoId, cantidad:cant, ts:serverTimestamp() };
 
         const batch = writeBatch(db);
-        const nuevoMovRef = doc(movColRef); // autoId
-        batch.set(nuevoMovRef, mov, {merge:true});
-        batch.set(exisRef, { almacenId, productoId, stock: increment(cant), upd: serverTimestamp() }, {merge:true});
+        batch.set(exisRef, { stock: increment(+cant), upd: serverTimestamp(), almacenId, productoId }, {merge:true});
+        batch.set(doc(logRef), mov);
         await batch.commit();
 
-        // UI
-        state.movimientosLocal.unshift({id:nuevoMovRef.id, ...mov, cantidad:cant});
-        pintaMovs();
+        state.entradas.unshift({ ...mov, ts:new Date() });
+        pintaEntradas();
         cantidad.value = "";
-        toast(msgInv, `Entrada (+${cant}) registrada en ${almacenId} para ${productoId} en ${rutaId}.`, true);
-      }catch(err){
-        console.error(err);
-        toast(msgInv,"No se pudo guardar la entrada. Revisa reglas y conexión.");
+        toast(`Entrada registrada: +${cant} → ${almacenId} (ruta ${rutaId}).`, true);
+      }catch(e){
+        console.error(e);
+        toast("No se pudo registrar la entrada.");
       }
     });
 
-    function pintaMovs(){
-      movList.innerHTML = state.movimientosLocal.map(m=>{
+    function pintaEntradas(){
+      movList.innerHTML = state.entradas.map(m=>{
         const prod = state.productos.find(p=>p.id===m.productoId);
         const nombre = prod?.descripcion || prod?.nombre || m.productoId;
-        return `
-          <div class="item">
-            <div>
-              <b>${nombre}</b>
-              <div class="muted">Prod: ${m.productoId} · Almacén: ${m.almacenId}</div>
-            </div>
-            <div class="right"><span class="ok">+${m.cantidad}</span></div>
-          </div>
-        `;
-      }).join("") || `<div class="muted" style="padding:8px 10px">Sin movimientos en esta sesión.</div>`;
+        return `<div class="item">
+          <div><b>${nombre}</b><div class="muted">Prod: ${m.productoId}</div></div>
+          <div><span class="pill">+${m.cantidad}</span> <span class="pill">${m.almacenId}</span> <span class="pill">${m.rutaId}</span></div>
+        </div>`;
+      }).join("") || `<div class="muted" style="padding:8px 10px">Sin entradas en esta sesión.</div>`;
     }
 
-    // ===== Init =====
+    // === Init ===
     (async function init(){
-      await Promise.all([cargarAlmacenes(), cargarRutas(), cargarProductos()]);
-      if(state.rutas.find(r=>r.id==="ruta_2")) selRuta.value = "ruta_2";
+      await Promise.all([cargarRutas(), cargarAlmacenes(), cargarProductos()]);
+      renderAlmacenes(); // inicial
     })();
   </script>
 </body>
