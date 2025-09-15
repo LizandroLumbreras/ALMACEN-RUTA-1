@@ -187,28 +187,29 @@
         || `<option value="">(sin productos)</option>`;
     }
 
-    // ===== Crear ruta + subcolecciones =====
-    async function crearRutaConSubcolecciones(rutaId){
-      const rutaRef = doc(db,"rutas_venta",rutaId);
-      const snap = await getDoc(rutaRef);
+// ===== Crear ruta + subcolecciones (parche sin IDs reservados) =====
+async function crearRutaConSubcolecciones(rutaId){
+  const rutaRef = doc(db,"rutas_venta",rutaId);
+  const snap = await getDoc(rutaRef);
 
-      if(!snap.exists()){
-        await setDoc(rutaRef, {
-          creadaEn: serverTimestamp(),
-          activa: true,
-          nota: "Creada desde UI – con subcolecciones"
-        });
-      }
+  if(!snap.exists()){
+    await setDoc(rutaRef, {
+      creadaEn: serverTimestamp(),
+      activa: true,
+      nota: "Creada desde UI – con subcolecciones"
+    });
+  }
 
-      // Crea documento marcador en cada subcolección para visibilidad en consola
-      const subcols = ["almacenes","clientes","cortes","ventas"];
-      const batch = writeBatch(db);
-      subcols.forEach(nombre=>{
-        const metaRef = doc(collection(rutaRef, nombre), "__meta__");
-        batch.set(metaRef, { createdAt: serverTimestamp(), init: true }, {merge:true});
-      });
-      await batch.commit();
-    }
+  // Crea un documento marcador NO reservado en cada subcolección
+  const subcols = ["almacenes","clientes","cortes","ventas"];
+  const batch = writeBatch(db);
+  subcols.forEach(nombre=>{
+    const keepRef = doc(collection(rutaRef, nombre), "_init"); // 👈 ya no usamos "__meta__"
+    batch.set(keepRef, { createdAt: serverTimestamp(), init: true }, {merge:true});
+  });
+  await batch.commit();
+}
+
 
     btnCrearRuta.addEventListener("click", async ()=>{
       const rutaId = (rutaIdInput.value||"").trim();
