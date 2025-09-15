@@ -1,331 +1,306 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-<title>Registrar ENTRADA – Cigarro (con selector de ruta)</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
-<style>
-  :root{ --azul:#00416A; --gris:#5b6b7a; --ok:#1e8e3e; --bg:linear-gradient(to right,#00416A,#E4E5E6);
-         --card:rgba(255,255,255,.96); --shadow:0 10px 28px rgba(0,0,0,.16); --radius:16px; }
-  *{box-sizing:border-box}
-  body{ margin:0; font-family:'Poppins',system-ui,Arial; background:var(--bg); color:#0f172a;
-        min-height:100vh; padding:20px; display:flex; justify-content:center; }
-  .wrap{width:100%; max-width:1000px; display:grid; gap:18px}
-  header{ background:#003456; color:#fff; padding:14px 16px; border-radius:var(--radius);
-          box-shadow:var(--shadow); text-align:center; font-weight:600; }
-  .card{ background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px; }
-  h2{margin:.2rem 0 1rem; font-size:1.1rem; color:#0b2740}
-  label{font-size:.9rem; display:block; margin:10px 0 6px}
-  input,select,textarea{
-    width:100%; padding:10px 12px; border:1px solid #cfd8e3; border-radius:10px; background:#fff;
-    font-family:inherit; font-size:.95rem;
-  }
-  .row{display:grid; grid-template-columns:1fr 1fr; gap:12px}
-  .btn{ background:var(--azul); color:#fff; border:none; padding:10px 14px; border-radius:12px; font-weight:600; cursor:pointer}
-  .btn:disabled{opacity:.6; cursor:not-allowed}
-  .muted{color:var(--gris); font-size:.9rem}
-  .ok{color:var(--ok); font-weight:600}
-  .hr{height:1px; background:#e6e9ef; margin:14px 0}
-  table{width:100%; border-collapse:collapse; font-size:.92rem}
-  th,td{border-bottom:1px dashed #e2e8f0; padding:8px}
-  th{text-align:left; color:#344}
-  tfoot td{font-weight:700}
-  .right{text-align:right}
-  .pill{padding:3px 8px; border-radius:999px; background:#eef2f7; font-size:.78rem}
-</style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <title>Entradas a Almacén – Rutas</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --azul:#00416A; --gris:#E4E5E6; --ok:#1e8e3e; --warn:#b45309;
+      --bg: linear-gradient(to right, #00416A, #E4E5E6);
+      --card: rgba(255,255,255,.92); --muted: rgba(0,0,0,.55); --shadow:0 8px 24px rgba(0,0,0,.18);
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:'Poppins',system-ui,Arial; color:#0f172a; background:var(--bg);
+      display:flex; flex-direction:column;
+    }
+    header{ color:#fff; padding:14px 18px; font-weight:700; text-align:center; letter-spacing:.3px;}
+    main{ flex:1; display:flex; justify-content:center; padding:18px}
+    .card{
+      width:100%; max-width:980px; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
+      padding:18px; backdrop-filter: blur(4px);
+    }
+    h2{margin:6px 0 14px 0}
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:end; margin-bottom:12px}
+    label{font-size:12px; color:var(--muted)}
+    select,input,button{
+      width:100%; padding:10px 12px; border:1px solid #d8dde6; border-radius:10px; font-family:inherit; font-size:14px;
+      background:#fff;
+    }
+    .col{flex:1 1 180px; min-width:180px}
+    .col.small{flex:0 0 120px; min-width:120px}
+    .col.xs{flex:0 0 90px; min-width:90px}
+    .actions{display:flex; gap:10px}
+    .btn{
+      border:none; cursor:pointer; background:#00416A; color:#fff; font-weight:600; padding:11px 14px; border-radius:10px;
+    }
+    .btn.secondary{background:#0c6cbd}
+    .btn.ghost{background:#fff; border:1px solid #cfd6e4; color:#0f172a}
+    .btn.warn{background:#b45309}
+    .tag{display:inline-block; padding:4px 8px; background:#eef2ff; border:1px solid #c7d2fe; border-radius:999px; font-size:12px}
+    table{width:100%; border-collapse:collapse; margin-top:10px; background:#fff; border-radius:12px; overflow:hidden}
+    th,td{padding:10px 10px; border-bottom:1px solid #eef2f7; text-align:left; font-size:14px}
+    th{background:#f8fafc; color:#334155; position:sticky; top:0}
+    tbody tr:hover{background:#f6faff}
+    tfoot td{font-weight:700}
+    .right{text-align:right}
+    .muted{color:var(--muted)}
+    .empty{padding:16px; text-align:center; color:var(--muted)}
+    .footer{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap}
+    .mode{display:flex; gap:8px; align-items:center}
+    .mode select{min-width:220px}
+    .help{font-size:12px; color:var(--muted)}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <header>Registrar ENTRADA – Cigarro · La Proveedora</header>
+  <header>Entradas a Almacén – Rutas</header>
+  <main>
+    <div class="card">
+      <h2>Captura de Entradas</h2>
 
-  <!-- Selección de Ruta y Folio -->
-  <section class="card">
-    <div class="row">
-      <div>
-        <label for="selRuta">Ruta</label>
-        <select id="selRuta"></select>
+      <div class="row">
+        <div class="col">
+          <label for="selAlmacen">Almacén destino</label>
+          <select id="selAlmacen">
+            <option value="">— selecciona —</option>
+            <option value="Almacen_Ruta_1">Almacen_Ruta_1</option>
+            <option value="Almacen_Ruta_2">Almacen_Ruta_2</option>
+          </select>
+        </div>
+        <div class="col">
+          <label for="txtCodigo">Código</label>
+          <input id="txtCodigo" placeholder="Escanea o escribe el código" autocomplete="off"/>
+        </div>
+        <div class="col small">
+          <label for="txtCant">Cantidad</label>
+          <input id="txtCant" type="number" inputmode="numeric" min="1" step="1" value="1"/>
+        </div>
+        <div class="col xs">
+          <button class="btn" id="btnAgregar" title="Buscar producto y agregar a la lista">Agregar</button>
+        </div>
       </div>
-      <div>
-        <label>Folio próximo</label>
-        <div><span id="folioNext" class="pill">Cargando…</span></div>
+
+      <div class="help">La búsqueda verifica primero <span class="tag">productos/{código}</span> y, si no existe, consulta por
+        <span class="tag">where("codigo" == código)</span>.
       </div>
+
+      <table id="tabla">
+        <thead>
+          <tr>
+            <th style="width:120px">Código</th>
+            <th>Descripción</th>
+            <th class="right" style="width:120px">Cantidad</th>
+            <th class="right" style="width:100px">Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr class="empty"><td colspan="4">Sin partidas. Agrega códigos para empezar.</td></tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" class="right">Total de piezas</td>
+            <td class="right" id="totalPzas">0</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <div class="footer">
+        <div class="mode">
+          <label for="selModo" class="muted">Modo de guardado:</label>
+          <select id="selModo" title="Entradas suma a existencia; Inventario Inicial sobrescribe">
+            <option value="entradas">Entradas (suma)</option>
+            <option value="inicial">Inventario Inicial (sobrescribe)</option>
+          </select>
+        </div>
+        <div class="actions">
+          <button class="btn ghost" id="btnLimpiar">Limpiar lista</button>
+          <button class="btn secondary" id="btnGuardar">Guardar entradas</button>
+        </div>
+      </div>
+
+      <div id="status" class="muted" style="margin-top:8px"></div>
     </div>
-    <div class="muted" id="folioHint">El folio es por ruta y se incrementa al guardar.</div>
-  </section>
+  </main>
 
-  <!-- Cabecera -->
-  <section class="card">
-    <h2>Datos de cabecera</h2>
-    <div class="row">
-      <div>
-        <label for="fecha">Fecha</label>
-        <input id="fecha" type="date"/>
-      </div>
-      <div>
-        <label for="almacen">Recibe en almacén</label>
-        <select id="almacen"></select>
-      </div>
-    </div>
+  <!-- Firebase v9+ (modular) por CDN -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, limit,
+      getDocs, serverTimestamp, increment
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <div class="row">
-      <div>
-        <label for="proveedor">Proveedor / Quién entrega</label>
-        <input id="proveedor" placeholder="Nombre de proveedor o persona"/>
-      </div>
-      <div>
-        <label for="quienRecibe">Quién recibe</label>
-        <select id="quienRecibe"></select>
-      </div>
-    </div>
-
-    <div class="row">
-      <div>
-        <label for="origen">Origen (opcional)</label>
-        <input id="origen" placeholder="Texto libre"/>
-      </div>
-      <div>
-        <label for="notas">Notas</label>
-        <input id="notas" placeholder="Observaciones (opcional)"/>
-      </div>
-    </div>
-
-    <div style="margin-top:10px">
-      <button id="btnContinuar" class="btn">Continuar</button>
-      <span id="msgHead" class="muted"></span>
-    </div>
-  </section>
-
-  <!-- Partidas -->
-  <section class="card" id="partidasCard" style="display:none">
-    <h2>Partidas</h2>
-    <div class="row">
-      <div>
-        <label for="producto">Producto</label>
-        <select id="producto"></select>
-      </div>
-      <div>
-        <label for="cantidad">Cantidad</label>
-        <input id="cantidad" type="number" min="1" step="1" placeholder="0"/>
-      </div>
-    </div>
-    <div style="margin-top:10px">
-      <button id="btnAgregar" class="btn">Agregar entrada (+)</button>
-      <span id="msgPartida" class="muted"></span>
-    </div>
-
-    <div class="hr"></div>
-    <table>
-      <thead>
-        <tr><th>Producto</th><th class="right">Cantidad</th></tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-      <tfoot>
-        <tr><td>Total partidas</td><td class="right" id="totalCant">0</td></tr>
-      </tfoot>
-    </table>
-
-    <div class="hr"></div>
-    <button id="btnGuardar" class="btn">Guardar ENTRADA</button>
-    <span id="msgGuardar" class="muted"></span>
-  </section>
-</div>
-
-<!-- Firebase -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-import {
-  initializeFirestore,
-  collection, doc, getDoc, getDocs, setDoc, addDoc, query, orderBy,
-  serverTimestamp, runTransaction, writeBatch, increment
-} from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-
-// Config (tu proyecto)
-const firebaseConfig = {
-  apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
-  authDomain: "inventariopv-643f1.firebaseapp.com",
-  projectId: "inventariopv-643f1",
-  storageBucket: "inventariopv-643f1.firebasestorage.app",
-  messagingSenderId: "96242533231",
-  appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
-};
-const app = initializeApp(firebaseConfig);
-const db  = initializeFirestore(app, { experimentalAutoDetectLongPolling:true, useFetchStreams:false });
-
-const $ = id => document.getElementById(id);
-const selRuta = $("selRuta"), folioNext = $("folioNext");
-const fecha = $("fecha"), almacen = $("almacen"), proveedor = $("proveedor"), quienRecibe = $("quienRecibe");
-const origen = $("origen"), notas = $("notas");
-const btnContinuar = $("btnContinuar"), msgHead = $("msgHead");
-const partidasCard = $("partidasCard");
-const producto = $("producto"), cantidad = $("cantidad");
-const btnAgregar = $("btnAgregar"), msgPartida = $("msgPartida");
-const tbody = $("tbody"), totalCant = $("totalCant");
-const btnGuardar = $("btnGuardar"), msgGuardar = $("msgGuardar");
-
-const state = { rutas:[], almacenes:[], usuarios:[], productos:[], items:[], rutaId:null, folio:0 };
-
-function fmtFolio(n, width=6){ return String(n).padStart(width,"0"); }
-function setMsg(el, text, ok=false){ el.textContent = text; el.className = ok ? "ok" : "muted"; }
-
-// --- Carga catálogos ---
-async function loadRutas(){
-  const snap = await getDocs(collection(db, "rutas_venta"));
-  state.rutas = snap.docs.map(d=>({id:d.id}));
-  selRuta.innerHTML = state.rutas.map(r=>`<option value="${r.id}">${r.id}</option>`).join("") || `<option value="">(sin rutas)</option>`;
-  state.rutaId = selRuta.value || null;
-}
-async function loadAlmacenes(){
-  const q = query(collection(db, "almacenes"), orderBy("id"));
-  const snap = await getDocs(q);
-  state.almacenes = snap.docs.map(d=>({id:d.id, ...d.data()}));
-  almacen.innerHTML = state.almacenes.map(a=>`<option value="${a.id}">${a.nombre||a.id}</option>`).join("") 
-    || `<option value="">(sin almacenes)</option>`;
-}
-async function loadUsuarios(){
-  const snap = await getDocs(collection(db, "usuarios_ruta"));
-  state.usuarios = snap.docs.map(d=>({id:d.id, ...d.data()}));
-  if(state.usuarios.length){
-    quienRecibe.innerHTML = state.usuarios
-      .sort((a,b)=>(a.nombre||a.id).localeCompare(b.nombre||b.id))
-      .map(u=>`<option value="${u.nombre||u.id}">${u.nombre||u.id}</option>`).join("");
-  }else{
-    // Fallback si no existe la colección: deja escribir a mano
-    quienRecibe.outerHTML = `<input id="quienRecibe" placeholder="Nombre quien recibe"/>`;
-  }
-}
-async function loadProductos(){
-  const snap = await getDocs(collection(db, "productos"));
-  state.productos = snap.docs.map(d=>({id:d.id, ...d.data()}));
-  producto.innerHTML = state.productos
-    .sort((a,b)=>(a.descripcion||a.id).localeCompare(b.descripcion||b.id))
-    .map(p=>`<option value="${p.id}">${(p.descripcion||p.nombre||p.id)} ${p.codigo?("· "+p.codigo):""}</option>`).join("")
-    || `<option value="">(sin productos)</option>`;
-}
-
-// --- Folio por ruta ---
-async function refreshFolio(){
-  if(!state.rutaId){ folioNext.textContent = "—"; return; }
-  const ref = doc(db, "rutas_venta", state.rutaId, "consecutivos", "entradas");
-  const snap = await getDoc(ref);
-  const n = snap.exists() && typeof snap.data().proximo === "number" ? snap.data().proximo : 1;
-  state.folio = n;
-  folioNext.textContent = fmtFolio(n);
-}
-
-// --- Eventos UI ---
-selRuta.addEventListener("change", async ()=>{
-  state.rutaId = selRuta.value || null;
-  await refreshFolio();
-});
-
-btnContinuar.addEventListener("click", ()=>{
-  if(!state.rutaId){ setMsg(msgHead,"Selecciona una ruta."); return; }
-  if(!fecha.value){ setMsg(msgHead,"Selecciona la fecha."); return; }
-  if(!almacen.value){ setMsg(msgHead,"Selecciona el almacén de recepción."); return; }
-  if(!proveedor.value){ setMsg(msgHead,"Indica proveedor / quién entrega."); return; }
-  const qr = document.getElementById("quienRecibe").value || "";
-  if(!qr){ setMsg(msgHead,"Indica quién recibe."); return; }
-  partidasCard.style.display = "block";
-  setMsg(msgHead, "Ok, captura las partidas…", true);
-});
-
-btnAgregar.addEventListener("click", ()=>{
-  const pid = producto.value;
-  const cant = Number(cantidad.value);
-  if(!pid){ setMsg(msgPartida,"Elige un producto."); return; }
-  if(!cant || cant<=0){ setMsg(msgPartida,"Cantidad inválida."); return; }
-  state.items.push({ productoId: pid, cantidad: cant });
-  cantidad.value = "";
-  renderItems();
-  setMsg(msgPartida, "Partida agregada.", true);
-});
-
-function renderItems(){
-  tbody.innerHTML = state.items.map(it=>{
-    const p = state.productos.find(x=>x.id===it.productoId);
-    const nombre = p?.descripcion || p?.nombre || it.productoId;
-    return `<tr><td>${nombre} <div class="muted">${it.productoId}</div></td><td class="right">${it.cantidad}</td></tr>`;
-  }).join("");
-  const total = state.items.reduce((a,b)=>a+b.cantidad,0);
-  totalCant.textContent = total;
-}
-
-// --- Guardar entrada ---
-btnGuardar.addEventListener("click", async ()=>{
-  if(!state.items.length){ setMsg(msgGuardar,"Agrega al menos una partida."); return; }
-  btnGuardar.disabled = true;
-
-  try{
-    const rutaId = state.rutaId;
-    const who = document.getElementById("quienRecibe").value || "";
-    const almId = almacen.value;
-
-    // 1) Obtener y avanzar folio con transaction
-    const consecRef = doc(db, "rutas_venta", rutaId, "consecutivos", "entradas");
-    const folioUsado = await runTransaction(db, async (tx)=>{
-      const snap = await tx.get(consecRef);
-      const actual = snap.exists() && typeof snap.data().proximo==="number" ? snap.data().proximo : 1;
-      const siguiente = actual + 1;
-      tx.set(consecRef, { proximo: siguiente, upd: serverTimestamp() }, { merge:true });
-      return actual;
-    });
-
-    const folioStr = fmtFolio(folioUsado);
-
-    // 2) Crear header y partidas
-    const entradaRef = doc(db, "rutas_venta", rutaId, "entradas", folioStr);
-    const partidasCol = collection(entradaRef, "partidas");
-
-    const header = {
-      folio: folioUsado,
-      folioStr,
-      fecha: fecha.value,
-      proveedor: proveedor.value,
-      quienRecibe: who,
-      origen: origen.value || "",
-      notas: notas.value || "",
-      almacenId: almId,
-      totalPartidas: state.items.length,
-      totalPiezas: state.items.reduce((a,b)=>a+b.cantidad,0),
-      createdAt: serverTimestamp()
+    // === Configuración de tu proyecto (pegada tal cual nos diste) ===
+    const firebaseConfig = {
+      apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
+      authDomain: "inventariopv-643f1.firebaseapp.com",
+      projectId: "inventariopv-643f1",
+      storageBucket: "inventariopv-643f1.firebasestorage.app",
+      messagingSenderId: "96242533231",
+      appId: "1:96242533231:web:aae75a18fbaf9840529e9a"
     };
 
-    const batch = writeBatch(db);
-    batch.set(entradaRef, header, {merge:true});
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
 
-    // 3) Escribir partidas y actualizar stock del almacén (top-level)
-    state.items.forEach(it=>{
-      const pRef = doc(partidasCol); // autoId
-      batch.set(pRef, { productoId: it.productoId, cantidad: it.cantidad });
+    // --- UI refs
+    const selAlmacen = document.getElementById('selAlmacen');
+    const txtCodigo  = document.getElementById('txtCodigo');
+    const txtCant    = document.getElementById('txtCant');
+    const btnAgregar = document.getElementById('btnAgregar');
+    const btnGuardar = document.getElementById('btnGuardar');
+    const btnLimpiar = document.getElementById('btnLimpiar');
+    const tbody      = document.getElementById('tbody');
+    const totalPzas  = document.getElementById('totalPzas');
+    const selModo    = document.getElementById('selModo');
+    const statusEl   = document.getElementById('status');
 
-      const exisRef = doc(db, "almacenes", almId, "existencias", it.productoId);
-      batch.set(exisRef, { stock: increment(+it.cantidad), upd: serverTimestamp(), almacenId: almId, productoId: it.productoId }, {merge:true});
+    let partidas = []; // {codigo, descripcion, cantidad}
+
+    function setStatus(msg, ok=false){
+      statusEl.textContent = msg || "";
+      statusEl.style.color = ok ? "var(--ok)" : "var(--muted)";
+    }
+
+    function render(){
+      tbody.innerHTML = "";
+      if(partidas.length === 0){
+        const tr = document.createElement('tr'); tr.className = "empty";
+        tr.innerHTML = `<td colspan="4">Sin partidas. Agrega códigos para empezar.</td>`;
+        tbody.appendChild(tr);
+        totalPzas.textContent = "0";
+        return;
+      }
+      let total = 0;
+      partidas.forEach((p, idx)=>{
+        total += p.cantidad;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="tag">${p.codigo}</span></td>
+          <td>${escapeHtml(p.descripcion || '')}</td>
+          <td class="right">${p.cantidad}</td>
+          <td class="right"><button class="btn warn" data-idx="${idx}">Quitar</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+      totalPzas.textContent = String(total);
+      tbody.querySelectorAll('button[data-idx]').forEach(btn=>{
+        btn.addEventListener('click', e=>{
+          const i = Number(e.currentTarget.dataset.idx);
+          partidas.splice(i,1);
+          render();
+        });
+      });
+    }
+
+    function escapeHtml(s){
+      return String(s || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    async function buscarProductoPorCodigo(codigo){
+      // 1) Intentar productos/{codigo}
+      const dir1 = doc(db, 'productos', codigo);
+      const snap1 = await getDoc(dir1);
+      if(snap1.exists()){
+        const d = snap1.data();
+        return { id: snap1.id, ...d, codigo: d.codigo || codigo };
+      }
+      // 2) Buscar por campo "codigo"
+      const q = query(collection(db,'productos'), where('codigo','==',codigo), limit(1));
+      const qs = await getDocs(q);
+      if(!qs.empty){
+        const s = qs.docs[0];
+        const d = s.data();
+        return { id: s.id, ...d, codigo: d.codigo || codigo };
+      }
+      return null;
+    }
+
+    btnAgregar.addEventListener('click', async ()=>{
+      const almacen = selAlmacen.value.trim();
+      const codigo  = txtCodigo.value.trim();
+      const cant    = Number(txtCant.value);
+
+      if(!almacen){ setStatus("Selecciona el almacén destino."); return; }
+      if(!codigo){ setStatus("Escribe un código."); txtCodigo.focus(); return; }
+      if(!Number.isFinite(cant) || cant<=0){ setStatus("Cantidad inválida."); txtCant.focus(); return; }
+
+      setStatus("Buscando producto…");
+      try{
+        const prod = await buscarProductoPorCodigo(codigo);
+        if(!prod){ setStatus("No se encontró el producto en ‘productos’."); return; }
+
+        const i = partidas.findIndex(x=>x.codigo===codigo);
+        if(i>=0){
+          partidas[i].cantidad += cant;
+        }else{
+          partidas.push({
+            codigo: codigo,
+            descripcion: prod.descripcion || prod.nombre || "(Sin descripción)",
+            cantidad: cant
+          });
+        }
+        render();
+        setStatus("Producto agregado a la lista.", true);
+        txtCodigo.value = ""; txtCant.value = 1; txtCodigo.focus();
+      }catch(err){
+        console.error(err);
+        setStatus("Error buscando producto. Revisa la consola.");
+      }
     });
 
-    await batch.commit();
+    btnGuardar.addEventListener('click', async ()=>{
+      const almacen = selAlmacen.value.trim();
+      if(!almacen){ setStatus("Selecciona el almacén destino."); return; }
+      if(partidas.length===0){ setStatus("No hay partidas para guardar."); return; }
 
-    // 4) Reset UI
-    state.items = [];
-    renderItems();
-    await refreshFolio();
-    setMsg(msgGuardar, `Entrada ${folioStr} guardada correctamente.`, true);
-  }catch(err){
-    console.error(err);
-    setMsg(msgGuardar, "No se pudo guardar la entrada.");
-  }finally{
-    btnGuardar.disabled = false;
-  }
-});
+      const modo = selModo.value; // 'entradas' | 'inicial'
+      setStatus("Guardando en Firestore…");
+      try{
+        for(const p of partidas){
+          const invRef = doc(db, 'almacenes', almacen, 'inventario', p.codigo);
+          if(modo === 'inicial'){
+            await setDoc(invRef, {
+              codigo: p.codigo,
+              descripcion: p.descripcion || "",
+              cantidad: Number(p.cantidad),
+              updatedAt: serverTimestamp(),
+              origen: 'captura_web',
+              modo: 'inicial'
+            }, { merge: false });
+          }else{
+            await setDoc(invRef, {
+              codigo: p.codigo,
+              descripcion: p.descripcion || "",
+              updatedAt: serverTimestamp(),
+              origen: 'captura_web',
+              modo: 'entrada'
+            }, { merge: true });
+            await updateDoc(invRef, { cantidad: increment(Number(p.cantidad)) });
+          }
+        }
+        setStatus("Entradas guardadas correctamente.", true);
+        partidas = [];
+        render();
+      }catch(err){
+        console.error(err);
+        setStatus("Ocurrió un error al guardar. Revisa la consola.");
+      }
+    });
 
-// --- Init ---
-(async function init(){
-  // Fecha por defecto hoy
-  fecha.value = new Date().toISOString().slice(0,10);
+    btnLimpiar.addEventListener('click', ()=>{
+      partidas = [];
+      render();
+      setStatus("Lista vaciada.");
+    });
 
-  await Promise.all([loadRutas(), loadAlmacenes(), loadUsuarios(), loadProductos()]);
-  await refreshFolio();
-})();
-</script>
+    txtCodigo.addEventListener('keydown', e=>{ if(e.key==='Enter') btnAgregar.click(); });
+    txtCant.addEventListener('keydown',  e=>{ if(e.key==='Enter') btnAgregar.click(); });
+  </script>
 </body>
 </html>
