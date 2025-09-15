@@ -34,7 +34,7 @@
     .col{flex:1 1 180px; min-width:180px}
     .col.small{flex:0 0 120px; min-width:120px}
     .col.xs{flex:0 0 90px; min-width:90px}
-    .actions{display:flex; gap:10px}
+    .actions{display:flex; gap:10px; margin-top:10px}
     .btn{
       border:none; cursor:pointer; background:#00416A; color:#fff; font-weight:600; padding:11px 14px; border-radius:10px;
     }
@@ -50,9 +50,7 @@
     .right{text-align:right}
     .muted{color:var(--muted)}
     .empty{padding:16px; text-align:center; color:var(--muted)}
-    .footer{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap}
-    .mode{display:flex; gap:8px; align-items:center}
-    .mode select{min-width:220px}
+    .footer{display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap}
     .help{font-size:12px; color:var(--muted)}
   </style>
 </head>
@@ -85,7 +83,7 @@
       </div>
 
       <div class="help">La búsqueda verifica primero <span class="tag">productos/{código}</span> y, si no existe, consulta por
-        <span class="tag">where("codigo" == código)</span>.
+        <span class="tag">where("codigo" == código)</span> y equivalentes como <span class="tag">codigoBarra</span>.
       </div>
 
       <table id="tabla">
@@ -110,17 +108,8 @@
       </table>
 
       <div class="footer">
-        <div class="mode">
-          <label for="selModo" class="muted">Modo de guardado:</label>
-          <select id="selModo" title="Entradas suma a existencia; Inventario Inicial sobrescribe">
-            <option value="entradas">Entradas (suma)</option>
-            <option value="inicial">Inventario Inicial (sobrescribe)</option>
-          </select>
-        </div>
-        <div class="actions">
-          <button class="btn ghost" id="btnLimpiar">Limpiar lista</button>
-          <button class="btn secondary" id="btnGuardar">Guardar entradas</button>
-        </div>
+        <button class="btn ghost" id="btnLimpiar">Limpiar lista</button>
+        <button class="btn secondary" id="btnGuardar">Guardar entradas</button>
       </div>
 
       <div id="status" class="muted" style="margin-top:8px"></div>
@@ -135,7 +124,7 @@
       getDocs, serverTimestamp, increment
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // === Configuración de tu proyecto (pegada tal cual nos diste) ===
+    // === TU CONFIG (ya probada) ===
     const firebaseConfig = {
       apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
       authDomain: "inventariopv-643f1.firebaseapp.com",
@@ -157,7 +146,6 @@
     const btnLimpiar = document.getElementById('btnLimpiar');
     const tbody      = document.getElementById('tbody');
     const totalPzas  = document.getElementById('totalPzas');
-    const selModo    = document.getElementById('selModo');
     const statusEl   = document.getElementById('status');
 
     let partidas = []; // {codigo, descripcion, cantidad}
@@ -165,6 +153,34 @@
     function setStatus(msg, ok=false){
       statusEl.textContent = msg || "";
       statusEl.style.color = ok ? "var(--ok)" : "var(--muted)";
+    }
+
+    function escapeHtml(s){
+      return String(s || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+
+    function getDescripcion(d){
+      return (
+        d.concepto ??
+        d.descripcion ??
+        d.Descripcion ??
+        d.nombre ??
+        d.Nombre ??
+        d.detalle ??
+        d.descripcionCorta ??
+        "(Sin descripción)"
+      );
+    }
+    function getCodigo(d, fallback){
+      return (
+        d.codigo ??
+        d.Codigo ??
+        d.codigoBarra ??
+        d.codigo_barras ??
+        d.EAN ?? d.ean ??
+        d.sku ?? d.clave ??
+        fallback
+      );
     }
 
     function render(){
@@ -197,69 +213,41 @@
         });
       });
     }
-function getDescripcion(d){
-  return (
-    d.concepto ??
-    d.descripcion ??
-    d.Descripcion ??
-    d.nombre ??
-    d.Nombre ??
-    d.detalle ??
-    d.descripcionCorta ??
-    "(Sin descripción)"
-  );
-}
 
-function getCodigo(d, fallback){
-  return (
-    d.codigo ??
-    d.Codigo ??
-    d.codigoBarra ??
-    d.codigo_barras ??
-    d.EAN ?? d.ean ??
-    d.sku ?? d.clave ??
-    fallback
-  );
-}
+    async function buscarProductoPorCodigo(codigoEntrada){
+      const codigoStr = String((codigoEntrada ?? "")).trim();
+      if(!codigoStr) return null;
 
-    function escapeHtml(s){
-      return String(s || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-
-async function buscarProductoPorCodigo(codigoEntrada){
-  const codigoStr = String((codigoEntrada ?? "")).trim();
-  if(!codigoStr) return null;
-
-  // 1) productos/{id == código}
-  try{
-    const refById = doc(db, "productos", codigoStr);
-    const sById   = await getDoc(refById);
-    if (sById.exists()) {
-      const d = sById.data();
-      return { id: sById.id, ...d, codigo: getCodigo(d, codigoStr), descripcion: getDescripcion(d) };
-    }
-  }catch(e){ console.warn("Lookup by ID:", e); }
-
-  // 2) Buscar por campos posibles (string y number)
-  const fields = ["codigo","Codigo","codigoBarra","codigo_barras","EAN","ean","sku","clave"];
-  const candidates = new Set([codigoStr]);
-  const n = Number(codigoStr);
-  if (Number.isFinite(n)) candidates.add(n);
-
-  for (const f of fields){
-    for (const v of candidates){
+      // 1) productos/{id == código}
       try{
-        const qref = query(collection(db,"productos"), where(f,"==",v), limit(1));
-        const qs = await getDocs(qref);
-        if (!qs.empty){
-          const s = qs.docs[0], d = s.data();
-          return { id: s.id, ...d, codigo: getCodigo(d, codigoStr), descripcion: getDescripcion(d) };
+        const refById = doc(db, "productos", codigoStr);
+        const sById   = await getDoc(refById);
+        if (sById.exists()) {
+          const d = sById.data();
+          return { id: sById.id, ...d, codigo: getCodigo(d, codigoStr), descripcion: getDescripcion(d) };
         }
-      }catch(e){ console.warn(`Lookup ${f}==${v} falló:`, e); }
+      }catch(e){ console.warn("Lookup by ID:", e); }
+
+      // 2) Buscar por campos posibles (string y number)
+      const fields = ["codigo","Codigo","codigoBarra","codigo_barras","EAN","ean","sku","clave"];
+      const candidates = new Set([codigoStr]);
+      const n = Number(codigoStr);
+      if (Number.isFinite(n)) candidates.add(n);
+
+      for (const f of fields){
+        for (const v of candidates){
+          try{
+            const qref = query(collection(db,"productos"), where(f,"==",v), limit(1));
+            const qs = await getDocs(qref);
+            if (!qs.empty){
+              const s = qs.docs[0], d = s.data();
+              return { id: s.id, ...d, codigo: getCodigo(d, codigoStr), descripcion: getDescripcion(d) };
+            }
+          }catch(e){ console.warn(`Lookup ${f}==${v} falló:`, e); }
+        }
+      }
+      return null;
     }
-  }
-  return null;
-}
 
     btnAgregar.addEventListener('click', async ()=>{
       const almacen = selAlmacen.value.trim();
@@ -275,16 +263,16 @@ async function buscarProductoPorCodigo(codigoEntrada){
         const prod = await buscarProductoPorCodigo(codigo);
         if(!prod){ setStatus("No se encontró el producto en ‘productos’."); return; }
 
-        const i = partidas.findIndex(x=>x.codigo===codigo);
-if(i>=0){
-  partidas[i].cantidad += cant;
-}else{
-  partidas.push({
-    codigo: getCodigo(prod, codigo),                  // <— usa el código normalizado
-    descripcion: getDescripcion(prod),                // <— toma 'concepto' si existe
-    cantidad: cant
-  });
-}
+        const i = partidas.findIndex(x=>x.codigo===getCodigo(prod, codigo));
+        if(i>=0){
+          partidas[i].cantidad += cant;
+        }else{
+          partidas.push({
+            codigo: getCodigo(prod, codigo),
+            descripcion: getDescripcion(prod),
+            cantidad: cant
+          });
+        }
         render();
         setStatus("Producto agregado a la lista.", true);
         txtCodigo.value = ""; txtCant.value = 1; txtCodigo.focus();
@@ -299,30 +287,20 @@ if(i>=0){
       if(!almacen){ setStatus("Selecciona el almacén destino."); return; }
       if(partidas.length===0){ setStatus("No hay partidas para guardar."); return; }
 
-      const modo = selModo.value; // 'entradas' | 'inicial'
-      setStatus("Guardando en Firestore…");
+      setStatus("Guardando entradas…");
       try{
         for(const p of partidas){
           const invRef = doc(db, 'almacenes', almacen, 'inventario', p.codigo);
-          if(modo === 'inicial'){
-            await setDoc(invRef, {
-              codigo: p.codigo,
-              descripcion: p.descripcion || "",
-              cantidad: Number(p.cantidad),
-              updatedAt: serverTimestamp(),
-              origen: 'captura_web',
-              modo: 'inicial'
-            }, { merge: false });
-          }else{
-            await setDoc(invRef, {
-              codigo: p.codigo,
-              descripcion: p.descripcion || "",
-              updatedAt: serverTimestamp(),
-              origen: 'captura_web',
-              modo: 'entrada'
-            }, { merge: true });
-            await updateDoc(invRef, { cantidad: increment(Number(p.cantidad)) });
-          }
+          // Creamos/actualizamos metadatos
+          await setDoc(invRef, {
+            codigo: p.codigo,
+            descripcion: p.descripcion || "",
+            updatedAt: serverTimestamp(),
+            origen: 'captura_web',
+            modo: 'entrada'
+          }, { merge: true });
+          // Sumamos cantidad
+          await updateDoc(invRef, { cantidad: increment(Number(p.cantidad)) });
         }
         setStatus("Entradas guardadas correctamente.", true);
         partidas = [];
