@@ -197,72 +197,69 @@
         });
       });
     }
+function getDescripcion(d){
+  return (
+    d.concepto ??
+    d.descripcion ??
+    d.Descripcion ??
+    d.nombre ??
+    d.Nombre ??
+    d.detalle ??
+    d.descripcionCorta ??
+    "(Sin descripción)"
+  );
+}
+
+function getCodigo(d, fallback){
+  return (
+    d.codigo ??
+    d.Codigo ??
+    d.codigoBarra ??
+    d.codigo_barras ??
+    d.EAN ?? d.ean ??
+    d.sku ?? d.clave ??
+    fallback
+  );
+}
 
     function escapeHtml(s){
       return String(s || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
     }
 
-  async function buscarProductoPorCodigo(codigoEntrada){
+async function buscarProductoPorCodigo(codigoEntrada){
   const codigoStr = String((codigoEntrada ?? "")).trim();
   if(!codigoStr) return null;
 
-  // 1) Intentar productos/{id == código}
+  // 1) productos/{id == código}
   try{
     const refById = doc(db, "productos", codigoStr);
     const sById   = await getDoc(refById);
     if (sById.exists()) {
       const d = sById.data();
-      return {
-        id: sById.id,
-        codigo: d.codigo ?? d.Codigo ?? d.EAN ?? d.ean ?? d.sku ?? d.clave ?? codigoStr,
-        descripcion: d.descripcion ?? d.Descripcion ?? d.nombre ?? d.Nombre ?? "(Sin descripción)",
-        ...d
-      };
+      return { id: sById.id, ...d, codigo: getCodigo(d, codigoStr), descripcion: getDescripcion(d) };
     }
-  }catch(e){ console.warn("Lookup by ID error:", e); }
+  }catch(e){ console.warn("Lookup by ID:", e); }
 
-  // 2) Buscar por campos posibles (string y, si aplica, number)
-  const candidateFields = [
-    "codigo","Codigo","codigoBarras","codigo_barras","EAN","ean","sku","clave"
-  ];
+  // 2) Buscar por campos posibles (string y number)
+  const fields = ["codigo","Codigo","codigoBarra","codigo_barras","EAN","ean","sku","clave"];
+  const candidates = new Set([codigoStr]);
+  const n = Number(codigoStr);
+  if (Number.isFinite(n)) candidates.add(n);
 
-  const candidates = new Set();
-  candidates.add(codigoStr);
-  // Si es un número válido, busca también como número
-  const asNumber = Number(codigoStr);
-  const isNumeric = Number.isFinite(asNumber) && codigoStr !== "";
-  if (isNumeric) candidates.add(asNumber);
-
-  for (const field of candidateFields){
-    for (const value of candidates){
+  for (const f of fields){
+    for (const v of candidates){
       try{
-        const qref = query(
-          collection(db, "productos"),
-          where(field, "==", value),
-          limit(1)
-        );
+        const qref = query(collection(db,"productos"), where(f,"==",v), limit(1));
         const qs = await getDocs(qref);
         if (!qs.empty){
-          const docSnap = qs.docs[0];
-          const d = docSnap.data();
-          return {
-            id: docSnap.id,
-            codigo: d.codigo ?? d.Codigo ?? d.EAN ?? d.ean ?? d.sku ?? d.clave ?? codigoStr,
-            descripcion: d.descripcion ?? d.Descripcion ?? d.nombre ?? d.Nombre ?? "(Sin descripción)",
-            ...d
-          };
+          const s = qs.docs[0], d = s.data();
+          return { id: s.id, ...d, codigo: getCodigo(d, codigoStr), descripcion: getDescripcion(d) };
         }
-      }catch(e){
-        // Algunos campos pueden no existir/estar indexados; seguimos intentando los demás.
-        console.warn(`Lookup by field ${field} == ${value} falló:`, e);
-      }
+      }catch(e){ console.warn(`Lookup ${f}==${v} falló:`, e); }
     }
   }
-
-  // 3) No encontrado
   return null;
 }
-
 
     btnAgregar.addEventListener('click', async ()=>{
       const almacen = selAlmacen.value.trim();
@@ -279,15 +276,15 @@
         if(!prod){ setStatus("No se encontró el producto en ‘productos’."); return; }
 
         const i = partidas.findIndex(x=>x.codigo===codigo);
-        if(i>=0){
-          partidas[i].cantidad += cant;
-        }else{
-          partidas.push({
-            codigo: codigo,
-            descripcion: prod.descripcion || prod.nombre || "(Sin descripción)",
-            cantidad: cant
-          });
-        }
+if(i>=0){
+  partidas[i].cantidad += cant;
+}else{
+  partidas.push({
+    codigo: getCodigo(prod, codigo),                  // <— usa el código normalizado
+    descripcion: getDescripcion(prod),                // <— toma 'concepto' si existe
+    cantidad: cant
+  });
+}
         render();
         setStatus("Producto agregado a la lista.", true);
         txtCodigo.value = ""; txtCant.value = 1; txtCodigo.focus();
