@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>Entradas a Almacén – Rutas</title>
+  <title>Entradas a Almacén – Rutas (con Folios)</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     :root{
@@ -24,7 +24,7 @@
       width:100%; max-width:980px; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow);
       padding:18px; backdrop-filter: blur(4px);
     }
-    h2{margin:6px 0 14px 0}
+    h2{margin:6px 0 14px}
     .row{display:flex; gap:12px; flex-wrap:wrap; align-items:end; margin-bottom:12px}
     label{font-size:12px; color:var(--muted)}
     select,input,button{
@@ -35,9 +35,7 @@
     .col.small{flex:0 0 120px; min-width:120px}
     .col.xs{flex:0 0 90px; min-width:90px}
     .actions{display:flex; gap:10px; margin-top:10px}
-    .btn{
-      border:none; cursor:pointer; background:#00416A; color:#fff; font-weight:600; padding:11px 14px; border-radius:10px;
-    }
+    .btn{border:none; cursor:pointer; background:#00416A; color:#fff; font-weight:600; padding:11px 14px; border-radius:10px;}
     .btn.secondary{background:#0c6cbd}
     .btn.ghost{background:#fff; border:1px solid #cfd6e4; color:#0f172a}
     .btn.warn{background:#b45309}
@@ -78,12 +76,19 @@
           <input id="txtCant" type="number" inputmode="numeric" min="1" step="1" value="1"/>
         </div>
         <div class="col xs">
-          <button class="btn" id="btnAgregar" title="Buscar producto y agregar a la lista">Agregar</button>
+          <button class="btn" id="btnAgregar">Agregar</button>
         </div>
       </div>
 
-      <div class="help">La búsqueda verifica primero <span class="tag">productos/{código}</span> y, si no existe, consulta por
-        <span class="tag">where("codigo" == código)</span> y equivalentes como <span class="tag">codigoBarra</span>.
+      <div class="row">
+        <div class="col small">
+          <label for="folioSize">Productos por folio</label>
+          <input id="folioSize" type="number" min="1" step="1" value="10"/>
+        </div>
+        <div class="col" style="align-self:center">
+          <span class="help">La búsqueda intenta <span class="tag">productos/{id}</span> y luego
+            <span class="tag">where(codigo|codigoBarra|EAN|sku|clave == código)</span>. Los folios se generan por bloques.</span>
+        </div>
       </div>
 
       <table id="tabla">
@@ -121,10 +126,10 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
       getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, where, limit,
-      getDocs, serverTimestamp, increment
+      getDocs, serverTimestamp, increment, runTransaction
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // === TU CONFIG (ya probada) ===
+    // === Configuración de tu proyecto ===
     const firebaseConfig = {
       apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
       authDomain: "inventariopv-643f1.firebaseapp.com",
@@ -146,43 +151,23 @@
     const btnLimpiar = document.getElementById('btnLimpiar');
     const tbody      = document.getElementById('tbody');
     const totalPzas  = document.getElementById('totalPzas');
+    const folioSizeEl= document.getElementById('folioSize');
     const statusEl   = document.getElementById('status');
+
+    // Constantes de folios
+    const FOLIOS_DOC = ['consecutivos','Folios_Entradas_Almacenes_Rutas'];
 
     let partidas = []; // {codigo, descripcion, cantidad}
 
-    function setStatus(msg, ok=false){
-      statusEl.textContent = msg || "";
-      statusEl.style.color = ok ? "var(--ok)" : "var(--muted)";
-    }
-
-    function escapeHtml(s){
-      return String(s || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-
+    // Helpers UI
+    function setStatus(msg, ok=false){ statusEl.textContent = msg || ""; statusEl.style.color = ok ? "var(--ok)" : "var(--muted)"; }
+    function escapeHtml(s){ return String(s || "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
     function getDescripcion(d){
-      return (
-        d.concepto ??
-        d.descripcion ??
-        d.Descripcion ??
-        d.nombre ??
-        d.Nombre ??
-        d.detalle ??
-        d.descripcionCorta ??
-        "(Sin descripción)"
-      );
+      return d.concepto ?? d.descripcion ?? d.Descripcion ?? d.nombre ?? d.Nombre ?? d.detalle ?? d.descripcionCorta ?? "(Sin descripción)";
     }
     function getCodigo(d, fallback){
-      return (
-        d.codigo ??
-        d.Codigo ??
-        d.codigoBarra ??
-        d.codigo_barras ??
-        d.EAN ?? d.ean ??
-        d.sku ?? d.clave ??
-        fallback
-      );
+      return d.codigo ?? d.Codigo ?? d.codigoBarra ?? d.codigo_barras ?? d.EAN ?? d.ean ?? d.sku ?? d.clave ?? fallback;
     }
-
     function render(){
       tbody.innerHTML = "";
       if(partidas.length === 0){
@@ -213,12 +198,15 @@
         });
       });
     }
+    const chunk = (arr, size) => {
+      const out=[]; for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out;
+    };
 
+    // Buscar producto
     async function buscarProductoPorCodigo(codigoEntrada){
       const codigoStr = String((codigoEntrada ?? "")).trim();
       if(!codigoStr) return null;
 
-      // 1) productos/{id == código}
       try{
         const refById = doc(db, "productos", codigoStr);
         const sById   = await getDoc(refById);
@@ -228,11 +216,9 @@
         }
       }catch(e){ console.warn("Lookup by ID:", e); }
 
-      // 2) Buscar por campos posibles (string y number)
       const fields = ["codigo","Codigo","codigoBarra","codigo_barras","EAN","ean","sku","clave"];
       const candidates = new Set([codigoStr]);
-      const n = Number(codigoStr);
-      if (Number.isFinite(n)) candidates.add(n);
+      const n = Number(codigoStr); if (Number.isFinite(n)) candidates.add(n);
 
       for (const f of fields){
         for (const v of candidates){
@@ -249,6 +235,24 @@
       return null;
     }
 
+    // Reservar folios de forma atómica por almacén
+    async function reservarFolios(almacen, cuantos){
+      const folios = await runTransaction(db, async (tx)=>{
+        const ref = doc(db, ...FOLIOS_DOC);
+        const snap = await tx.get(ref);
+        const field = almacen; // "Almacen_Ruta_1" o "Almacen_Ruta_2"
+        let curr = 0;
+        if (snap.exists() && typeof snap.data()[field] === 'number') curr = snap.data()[field];
+        const start = curr + 1;
+        const end   = curr + cuantos;
+        tx.set(ref, { [field]: end }, { merge:true });
+        const arr=[]; for(let n=start;n<=end;n++) arr.push(n);
+        return arr;
+      });
+      return folios;
+    }
+
+    // UI events
     btnAgregar.addEventListener('click', async ()=>{
       const almacen = selAlmacen.value.trim();
       const codigo  = txtCodigo.value.trim();
@@ -263,15 +267,12 @@
         const prod = await buscarProductoPorCodigo(codigo);
         if(!prod){ setStatus("No se encontró el producto en ‘productos’."); return; }
 
-        const i = partidas.findIndex(x=>x.codigo===getCodigo(prod, codigo));
+        const code = getCodigo(prod, codigo);
+        const i = partidas.findIndex(x=>x.codigo===code);
         if(i>=0){
           partidas[i].cantidad += cant;
         }else{
-          partidas.push({
-            codigo: getCodigo(prod, codigo),
-            descripcion: getDescripcion(prod),
-            cantidad: cant
-          });
+          partidas.push({ codigo: code, descripcion: getDescripcion(prod), cantidad: cant });
         }
         render();
         setStatus("Producto agregado a la lista.", true);
@@ -287,38 +288,65 @@
       if(!almacen){ setStatus("Selecciona el almacén destino."); return; }
       if(partidas.length===0){ setStatus("No hay partidas para guardar."); return; }
 
-      setStatus("Guardando entradas…");
+      const size = Math.max(1, Number(folioSizeEl.value)||10);
+      const grupos = chunk(partidas, size);
+      setStatus(`Reservando ${grupos.length} folio(s)…`);
+
       try{
-        for(const p of partidas){
-          const invRef = doc(db, 'almacenes', almacen, 'inventario', p.codigo);
-          // Creamos/actualizamos metadatos
-          await setDoc(invRef, {
-            codigo: p.codigo,
-            descripcion: p.descripcion || "",
-            updatedAt: serverTimestamp(),
-            origen: 'captura_web',
-            modo: 'entrada'
-          }, { merge: true });
-          // Sumamos cantidad
-          await updateDoc(invRef, { cantidad: increment(Number(p.cantidad)) });
+        const folios = await reservarFolios(almacen, grupos.length);
+
+        // Por cada grupo (folio), crea encabezado + detalles y aplica inventario
+        for(let i=0;i<grupos.length;i++){
+          const folio = String(folios[i]).padStart(6,'0'); // 000001, 000002...
+          const now   = serverTimestamp();
+
+          // Encabezado
+          const encRef = doc(db, 'almacenes', almacen, 'entradas', folio);
+          const totalPzasGrupo = grupos[i].reduce((a,b)=>a + Number(b.cantidad||0), 0);
+          await setDoc(encRef, {
+            folio, almacen, createdAt: now,
+            partidas: grupos[i].length,
+            piezas: totalPzasGrupo,
+            origen: 'captura_web'
+          }, { merge:true });
+
+          // Detalles + inventario
+          for(const p of grupos[i]){
+            const detRef = doc(collection(encRef, 'detalles'), p.codigo);
+            await setDoc(detRef, {
+              codigo: p.codigo,
+              descripcion: p.descripcion || "",
+              cantidad: Number(p.cantidad),
+              createdAt: now
+            });
+
+            const invRef = doc(db, 'almacenes', almacen, 'inventario', p.codigo);
+            await setDoc(invRef, {
+              codigo: p.codigo,
+              descripcion: p.descripcion || "",
+              updatedAt: now,
+              origen: 'captura_web',
+              ultimoFolio: folio,
+              modo: 'entrada'
+            }, { merge: true });
+            await updateDoc(invRef, { cantidad: increment(Number(p.cantidad)) });
+          }
         }
-        setStatus("Entradas guardadas correctamente.", true);
-        partidas = [];
-        render();
+
+        setStatus(`Guardado OK. Folios creados: ${grupos.map((_,i)=>String(i+1)).length}.`, true);
+        partidas = []; render();
       }catch(err){
         console.error(err);
-        setStatus("Ocurrió un error al guardar. Revisa la consola.");
+        setStatus("Ocurrió un error al guardar/reservar folios. Revisa la consola.");
       }
     });
 
     btnLimpiar.addEventListener('click', ()=>{
-      partidas = [];
-      render();
-      setStatus("Lista vaciada.");
+      partidas = []; render(); setStatus("Lista vaciada.");
     });
 
     txtCodigo.addEventListener('keydown', e=>{ if(e.key==='Enter') btnAgregar.click(); });
-    txtCant.addEventListener('keydown',  e=>{ if(e.key==='Enter') btnAgregar.click(); });
+    txtCant.addEventListener('keydown',  e=>{ if(e.key==='Enter')  btnAgregar.click(); });
   </script>
 </body>
 </html>
