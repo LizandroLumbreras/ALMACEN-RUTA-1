@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>Entradas a Almacén – Rutas (con Folios)</title>
+  <title>Entradas a Almacén – Rutas</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
   <style>
     :root{
@@ -40,6 +40,10 @@
     .btn.ghost{background:#fff; border:1px solid #cfd6e4; color:#0f172a}
     .btn.warn{background:#b45309}
     .tag{display:inline-block; padding:4px 8px; background:#eef2ff; border:1px solid #c7d2fe; border-radius:999px; font-size:12px}
+    .folio{
+      display:inline-block; padding:8px 12px; border-radius:10px; background:#ecfdf5; border:1px solid #bbf7d0;
+      font-weight:700; color:#065f46; letter-spacing:.5px; min-width:140px; text-align:center;
+    }
     table{width:100%; border-collapse:collapse; margin-top:10px; background:#fff; border-radius:12px; overflow:hidden}
     th,td{padding:10px 10px; border-bottom:1px solid #eef2f7; text-align:left; font-size:14px}
     th{background:#f8fafc; color:#334155; position:sticky; top:0}
@@ -49,7 +53,6 @@
     .muted{color:var(--muted)}
     .empty{padding:16px; text-align:center; color:var(--muted)}
     .footer{display:flex; justify-content:flex-end; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap}
-    .help{font-size:12px; color:var(--muted)}
   </style>
 </head>
 <body>
@@ -80,15 +83,16 @@
         </div>
       </div>
 
-      <div class="row">
-        <div class="col small">
-          <label for="folioSize">Productos por folio</label>
-          <input id="folioSize" type="number" min="1" step="1" value="10"/>
+      <div class="row" style="align-items:center">
+        <div class="col">
+          <span class="muted">Folio actual:</span>
+          <span id="folioPreview" class="folio">—</span>
         </div>
-        <div class="col" style="align-self:center">
-          <span class="help">La búsqueda intenta <span class="tag">productos/{id}</span> y luego
-            <span class="tag">where(codigo|codigoBarra|EAN|sku|clave == código)</span>. Los folios se generan por bloques.</span>
-        </div>
+      </div>
+
+      <div class="muted" style="margin-bottom:6px">
+        La búsqueda intenta <span class="tag">productos/{id}</span> y luego
+        <span class="tag">where(codigo|codigoBarra|EAN|sku|clave == código)</span>.
       </div>
 
       <table id="tabla">
@@ -129,7 +133,7 @@
       getDocs, serverTimestamp, increment, runTransaction
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // === Configuración de tu proyecto ===
+    // === TU CONFIG ===
     const firebaseConfig = {
       apiKey: "AIzaSyCK5nb6u2CGRJ8AB1aPlRn54b97bdeAFeM",
       authDomain: "inventariopv-643f1.firebaseapp.com",
@@ -151,11 +155,17 @@
     const btnLimpiar = document.getElementById('btnLimpiar');
     const tbody      = document.getElementById('tbody');
     const totalPzas  = document.getElementById('totalPzas');
-    const folioSizeEl= document.getElementById('folioSize');
     const statusEl   = document.getElementById('status');
+    const folioPreviewEl = document.getElementById('folioPreview');
 
-    // Constantes de folios
+    // Doc de consecutivos
     const FOLIOS_DOC = ['consecutivos','Folios_Entradas_Almacenes_Rutas'];
+
+    // Prefijos y padding por almacén (según tu ejemplo)
+    const FOLIO_FMT = {
+      'Almacen_Ruta_1': { prefix:'R1-', pad:5 },
+      'Almacen_Ruta_2': { prefix:'R2-', pad:5 },
+    };
 
     let partidas = []; // {codigo, descripcion, cantidad}
 
@@ -168,6 +178,24 @@
     function getCodigo(d, fallback){
       return d.codigo ?? d.Codigo ?? d.codigoBarra ?? d.codigo_barras ?? d.EAN ?? d.ean ?? d.sku ?? d.clave ?? fallback;
     }
+    function formatFolio(almacen, num){
+      const fmt = FOLIO_FMT[almacen] || {prefix:'R-', pad:5};
+      return `${fmt.prefix}${String(num).padStart(fmt.pad,'0')}`;
+    }
+
+    async function refreshFolioPreview(){
+      const almacen = selAlmacen.value.trim();
+      if(!almacen){ folioPreviewEl.textContent = '—'; return; }
+      try{
+        const ref = doc(db, ...FOLIOS_DOC);
+        const snap = await getDoc(ref);
+        const current = (snap.exists() && typeof snap.data()?.[almacen] === 'number') ? snap.data()[almacen] : 0;
+        folioPreviewEl.textContent = formatFolio(almacen, current + 1);
+      }catch(e){
+        console.warn(e); folioPreviewEl.textContent = '—';
+      }
+    }
+
     function render(){
       tbody.innerHTML = "";
       if(partidas.length === 0){
@@ -198,9 +226,6 @@
         });
       });
     }
-    const chunk = (arr, size) => {
-      const out=[]; for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size)); return out;
-    };
 
     // Buscar producto
     async function buscarProductoPorCodigo(codigoEntrada){
@@ -235,24 +260,23 @@
       return null;
     }
 
-    // Reservar folios de forma atómica por almacén
-    async function reservarFolios(almacen, cuantos){
-      const folios = await runTransaction(db, async (tx)=>{
+    // Reservar UN folio de forma atómica por almacén
+    async function reservarFolio(almacen){
+      const num = await runTransaction(db, async (tx)=>{
         const ref = doc(db, ...FOLIOS_DOC);
         const snap = await tx.get(ref);
-        const field = almacen; // "Almacen_Ruta_1" o "Almacen_Ruta_2"
         let curr = 0;
-        if (snap.exists() && typeof snap.data()[field] === 'number') curr = snap.data()[field];
-        const start = curr + 1;
-        const end   = curr + cuantos;
-        tx.set(ref, { [field]: end }, { merge:true });
-        const arr=[]; for(let n=start;n<=end;n++) arr.push(n);
-        return arr;
+        if (snap.exists() && typeof snap.data()[almacen] === 'number') curr = snap.data()[almacen];
+        const next = curr + 1;
+        tx.set(ref, { [almacen]: next }, { merge:true });
+        return next;
       });
-      return folios;
+      return num;
     }
 
     // UI events
+    selAlmacen.addEventListener('change', refreshFolioPreview);
+
     btnAgregar.addEventListener('click', async ()=>{
       const almacen = selAlmacen.value.trim();
       const codigo  = txtCodigo.value.trim();
@@ -288,65 +312,62 @@
       if(!almacen){ setStatus("Selecciona el almacén destino."); return; }
       if(partidas.length===0){ setStatus("No hay partidas para guardar."); return; }
 
-      const size = Math.max(1, Number(folioSizeEl.value)||10);
-      const grupos = chunk(partidas, size);
-      setStatus(`Reservando ${grupos.length} folio(s)…`);
-
+      setStatus("Reservando folio…");
       try{
-        const folios = await reservarFolios(almacen, grupos.length);
+        const numero = await reservarFolio(almacen);
+        const folio = formatFolio(almacen, numero);
+        const now   = serverTimestamp();
 
-        // Por cada grupo (folio), crea encabezado + detalles y aplica inventario
-        for(let i=0;i<grupos.length;i++){
-          const folio = String(folios[i]).padStart(6,'0'); // 000001, 000002...
-          const now   = serverTimestamp();
+        // Encabezado
+        const totalPzasGrupo = partidas.reduce((a,b)=>a + Number(b.cantidad||0), 0);
+        const encRef = doc(db, 'almacenes', almacen, 'entradas', folio);
+        await setDoc(encRef, {
+          folio, almacen, createdAt: now,
+          partidas: partidas.length,
+          piezas: totalPzasGrupo,
+          origen: 'captura_web'
+        }, { merge:true });
 
-          // Encabezado
-          const encRef = doc(db, 'almacenes', almacen, 'entradas', folio);
-          const totalPzasGrupo = grupos[i].reduce((a,b)=>a + Number(b.cantidad||0), 0);
-          await setDoc(encRef, {
-            folio, almacen, createdAt: now,
-            partidas: grupos[i].length,
-            piezas: totalPzasGrupo,
-            origen: 'captura_web'
-          }, { merge:true });
+        // Detalles + inventario
+        for(const p of partidas){
+          const detRef = doc(collection(encRef, 'detalles'), p.codigo);
+          await setDoc(detRef, {
+            codigo: p.codigo,
+            descripcion: p.descripcion || "",
+            cantidad: Number(p.cantidad),
+            createdAt: now
+          });
 
-          // Detalles + inventario
-          for(const p of grupos[i]){
-            const detRef = doc(collection(encRef, 'detalles'), p.codigo);
-            await setDoc(detRef, {
-              codigo: p.codigo,
-              descripcion: p.descripcion || "",
-              cantidad: Number(p.cantidad),
-              createdAt: now
-            });
-
-            const invRef = doc(db, 'almacenes', almacen, 'inventario', p.codigo);
-            await setDoc(invRef, {
-              codigo: p.codigo,
-              descripcion: p.descripcion || "",
-              updatedAt: now,
-              origen: 'captura_web',
-              ultimoFolio: folio,
-              modo: 'entrada'
-            }, { merge: true });
-            await updateDoc(invRef, { cantidad: increment(Number(p.cantidad)) });
-          }
+          const invRef = doc(db, 'almacenes', almacen, 'inventario', p.codigo);
+          await setDoc(invRef, {
+            codigo: p.codigo,
+            descripcion: p.descripcion || "",
+            updatedAt: now,
+            origen: 'captura_web',
+            ultimoFolio: folio,
+            modo: 'entrada'
+          }, { merge: true });
+          await updateDoc(invRef, { cantidad: increment(Number(p.cantidad)) });
         }
 
-        setStatus(`Guardado OK. Folios creados: ${grupos.map((_,i)=>String(i+1)).length}.`, true);
+        setStatus(`Guardado OK. Folio: ${folio}`, true);
         partidas = []; render();
+        await refreshFolioPreview(); // muestra siguiente folio disponible
       }catch(err){
         console.error(err);
-        setStatus("Ocurrió un error al guardar/reservar folios. Revisa la consola.");
+        setStatus("Ocurrió un error al guardar/reservar folio. Revisa la consola.");
       }
     });
 
     btnLimpiar.addEventListener('click', ()=>{
-      partidas = []; render(); setStatus("Lista vaciada.");
+      partidas = []; render(); setStatus("Lista vaciada."); 
     });
 
     txtCodigo.addEventListener('keydown', e=>{ if(e.key==='Enter') btnAgregar.click(); });
     txtCant.addEventListener('keydown',  e=>{ if(e.key==='Enter')  btnAgregar.click(); });
+
+    // Inicial
+    refreshFolioPreview();
   </script>
 </body>
 </html>
